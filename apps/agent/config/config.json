@@ -1,0 +1,6 @@
+{
+  "directory_to_watch": "/path/to/your/directory",
+  "endpoint": "http://localhost:8080/upload",
+  "check_interval_seconds": 60,
+  "http_timeout_seconds": 10
+}
