@@ -8,5 +8,18 @@ services:
     volumes:
       - mongo_data:/data/db
 
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./apps/backend:/app
+    depends_on:
+      - mongo
+    env_file:
+      - ./apps/backend/.env
+
 volumes:
   mongo_data:
