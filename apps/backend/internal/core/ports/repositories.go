@@ -1,23 +1,14 @@
 package ports
 
-import "backend/internal/core/domain"
-
-type UserRepository interface {
-	Save(user *domain.User) error
-	FindByEmail(email string) (*domain.User, error)
-}
+import (
+	"backend/internal/core/domain"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type EventRepository interface {
 	Save(event *domain.Event) error
-	FindAll() ([]*domain.Event, error)
-	FindByID(id int64) (*domain.Event, error)
-}
-
-type RunnerRepository interface {
-	Save(runner *domain.Runner) error
-}
-
-type ResultRepository interface {
-	Save(result *domain.Result) error
-	FindByEventID(eventID int64) ([]*domain.Result, error)
+	FindByCode(code string) (*domain.Event, error)
+	UpdateFileHash(id primitive.ObjectID, hash string) error
+	DeleteEventData(eventID primitive.ObjectID) error
+	SaveAllData(data []domain.EventData) (int, error)
 }

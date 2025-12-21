@@ -1,19 +1,15 @@
 package ports
 
-import "backend/internal/core/domain"
+import (
+	"mime/multipart"
+)
 
-type UserService interface {
-	Register(email, name string) (*domain.User, error)
-	Login(email string) (*domain.User, error)
+type UploadResult struct {
+	EventID         string `json:"eventId"`
+	RecordsInserted int    `json:"recordsInserted"`
+	Reprocessed     bool   `json:"reprocessed"`
 }
 
 type EventService interface {
-	Create(name string) (*domain.Event, error)
-	GetAll() ([]*domain.Event, error)
-	GetByID(id int64) (*domain.Event, error)
-}
-
-type ResultService interface {
-	Upload(eventID int64, file []byte) error
-	GetByEventID(eventID int64) ([]*domain.Result, error)
+	Upload(file *multipart.FileHeader, clientHash string) (*UploadResult, error)
 }
