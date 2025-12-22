@@ -121,14 +121,16 @@ export default function ParticipantsPage() {
             <table className="w-full text-sm text-left text-slate-800">
               <thead className="text-xs text-slate-700 uppercase bg-slate-100">
                 <tr>
+                  <th scope="col" className="px-6 py-3">#</th>
                   {tableHeaders.map((header) => (
                     <th key={header} scope="col" className="px-6 py-3">{header}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {participants.map((p) => (
+                {participants.map((p, index) => (
                   <tr key={p.id} className="border-b border-slate-200 hover:bg-slate-50">
+                    <td className="px-6 py-4 font-medium text-slate-900">{(currentPage - 1) * limit + index + 1}</td>
                     {tableHeaders.map((header) => (
                       <td key={header} className="px-6 py-4">{p.data[header] || '-'}</td>
                     ))}
