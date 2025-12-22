@@ -8,7 +8,6 @@ import (
 
 type Event struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Code      string             `bson:"code" json:"code"`
 	Name      string             `bson:"name" json:"name"`
 	Date      time.Time          `bson:"date" json:"date"`
 	Status    string             `bson:"status" json:"status"`

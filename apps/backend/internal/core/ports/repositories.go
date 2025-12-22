@@ -19,7 +19,7 @@ type FindParticipantsResult struct {
 
 type EventRepository interface {
 	Save(event *domain.Event) error
-	FindByCode(code string) (*domain.Event, error)
+	FindByName(name string) (*domain.Event, error)
 	UpdateFileHash(id primitive.ObjectID, hash string) error
 	DeleteEventData(eventID primitive.ObjectID) error
 	SaveAllData(data []domain.EventData) (int, error)
