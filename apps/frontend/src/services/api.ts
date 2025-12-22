@@ -72,3 +72,38 @@ export const getParticipants = async (
 
   return response.json();
 };
+
+// Helper to calculate SHA-256 hash
+const calculateSHA256 = async (file: File): Promise<string> => {
+  const buffer = await file.arrayBuffer();
+  // Note: 'crypto' is a web API, available in browser environments
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+};
+
+interface UploadResult {
+  EventID: string;
+  RecordsInserted: number;
+  Reprocessed: boolean;
+}
+
+export const uploadFile = async (file: File): Promise<UploadResult> => {
+  const hash = await calculateSHA256(file);
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("hash", hash);
+
+  const response = await fetch(`${API_URL}/events/upload`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: "Error de red o respuesta inválida" }));
+    throw new Error(errorData.error || `Error HTTP! estado: ${response.status}`);
+  }
+
+  return response.json();
+};

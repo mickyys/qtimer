@@ -133,7 +133,7 @@ func (r *mongoEventRepository) FindData(eventID primitive.ObjectID, name, chip, 
 		filter["data.Dorsal"] = bson.M{"$regex": *dorsal, "$options": "i"}
 	}
 	if category != nil {
-		filter["data.Categoria"] = bson.M{"$regex": *category, "$options": "i"}
+		filter["data.Categoría"] = bson.M{"$regex": *category, "$options": "i"}
 	}
 	if sex != nil {
 		filter["data.Sexo"] = bson.M{"$regex": *sex, "$options": "i"}
