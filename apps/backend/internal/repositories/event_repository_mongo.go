@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
@@ -15,14 +16,14 @@ import (
 )
 
 type mongoEventRepository struct {
-	db       *mongo.Client
-	dbName   string
+	db     *mongo.Client
+	dbName string
 }
 
 func NewMongoEventRepository(db *mongo.Client) ports.EventRepository {
 	return &mongoEventRepository{
-		db:       db,
-		dbName:   os.Getenv("MONGO_DATABASE"),
+		db:     db,
+		dbName: os.Getenv("MONGO_DATABASE"),
 	}
 }
 
@@ -112,6 +113,8 @@ func (r *mongoEventRepository) Find(name *string, date *time.Time, page int, lim
 		return nil, err
 	}
 
+	fmt.Println("events", events)
+
 	return &ports.FindEventsResult{
 		Events:     events,
 		TotalCount: totalCount,
@@ -158,6 +161,10 @@ func (r *mongoEventRepository) FindData(eventID primitive.ObjectID, name, chip, 
 	var participants []*domain.EventData
 	if err = cursor.All(context.Background(), &participants); err != nil {
 		return nil, err
+	}
+
+	if participants == nil {
+		participants = []*domain.EventData{}
 	}
 
 	return &ports.FindParticipantsResult{
