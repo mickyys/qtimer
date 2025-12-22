@@ -5,8 +5,10 @@
 /.pnpm-store
 
 # next.js
-/.next/
-/out/
+/apps/frontend/.next/
+/apps/frontend/node_modules
+/apps/frontend/out/
+/apps/frontend/*.log
 
 # misc
 .DS_Store
