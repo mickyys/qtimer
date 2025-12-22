@@ -22,3 +22,6 @@ pnpm-debug.log*
 
 # local env files
 .env*.local
+.env
+main
+/apps/backend/.env
