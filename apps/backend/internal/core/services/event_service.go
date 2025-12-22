@@ -67,7 +67,12 @@ func (s *eventService) Upload(fileHeader *multipart.FileHeader, clientHash strin
 
 	// First line: event name
 	if scanner.Scan() {
-		eventName := scanner.Text()
+		line := scanner.Text()
+		parts := strings.Split(line, "|")
+		if len(parts) != 2 {
+			return nil, errors.New("invalid event header format")
+		}
+		eventName := parts[1]
 		if eventName == "" {
 			return nil, errors.New("event name in header cannot be empty")
 		}
