@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type mongoEventRepository struct {
@@ -77,4 +78,90 @@ func (r *mongoEventRepository) SaveAllData(data []domain.EventData) (int, error)
 		return 0, err
 	}
 	return len(result.InsertedIDs), nil
+}
+
+func (r *mongoEventRepository) Find(name *string, date *time.Time, page int, limit int) (*ports.FindEventsResult, error) {
+	filter := bson.M{}
+	if name != nil {
+		filter["name"] = bson.M{"$regex": name, "$options": "i"}
+	}
+	if date != nil {
+		startOfDay := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
+		endOfDay := startOfDay.Add(24 * time.Hour)
+		filter["date"] = bson.M{"$gte": startOfDay, "$lt": endOfDay}
+	}
+
+	totalCount, err := r.getEventCollection().CountDocuments(context.Background(), filter)
+	if err != nil {
+		return nil, err
+	}
+
+	findOptions := options.Find()
+	findOptions.SetSkip(int64((page - 1) * limit))
+	findOptions.SetLimit(int64(limit))
+	findOptions.SetSort(bson.D{{Key: "date", Value: -1}})
+
+	cursor, err := r.getEventCollection().Find(context.Background(), filter, findOptions)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.Background())
+
+	var events []*domain.Event
+	if err = cursor.All(context.Background(), &events); err != nil {
+		return nil, err
+	}
+
+	return &ports.FindEventsResult{
+		Events:     events,
+		TotalCount: totalCount,
+	}, nil
+}
+
+func (r *mongoEventRepository) FindData(eventID primitive.ObjectID, name, chip, dorsal, category, sex, position *string, page int, limit int) (*ports.FindParticipantsResult, error) {
+	filter := bson.M{"eventId": eventID}
+	if name != nil {
+		filter["data.Nombre"] = bson.M{"$regex": *name, "$options": "i"}
+	}
+	if chip != nil {
+		filter["data.Chip"] = bson.M{"$regex": *chip, "$options": "i"}
+	}
+	if dorsal != nil {
+		filter["data.Dorsal"] = bson.M{"$regex": *dorsal, "$options": "i"}
+	}
+	if category != nil {
+		filter["data.Categoria"] = bson.M{"$regex": *category, "$options": "i"}
+	}
+	if sex != nil {
+		filter["data.Sexo"] = bson.M{"$regex": *sex, "$options": "i"}
+	}
+	if position != nil {
+		filter["data.General"] = bson.M{"$regex": *position, "$options": "i"}
+	}
+
+	totalCount, err := r.getEventDataCollection().CountDocuments(context.Background(), filter)
+	if err != nil {
+		return nil, err
+	}
+
+	findOptions := options.Find()
+	findOptions.SetSkip(int64((page - 1) * limit))
+	findOptions.SetLimit(int64(limit))
+	findOptions.SetSort(bson.D{{Key: "data.General", Value: 1}})
+
+	cursor, err := r.getEventDataCollection().Find(context.Background(), filter, findOptions)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.Background())
+
+	var participants []*domain.EventData
+	if err = cursor.All(context.Background(), &participants); err != nil {
+		return nil, err
+	}
+
+	return &ports.FindParticipantsResult{
+		Participants: participants,
+		TotalCount:   totalCount,
+	}, nil
 }

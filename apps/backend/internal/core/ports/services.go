@@ -2,6 +2,7 @@ package ports
 
 import (
 	"mime/multipart"
+	"time"
 )
 
 type UploadResult struct {
@@ -12,4 +13,6 @@ type UploadResult struct {
 
 type EventService interface {
 	Upload(file *multipart.FileHeader, clientHash string) (*UploadResult, error)
+	GetEvents(name *string, date *time.Time, page int, limit int) (*FindEventsResult, error)
+	GetParticipants(eventID string, name, chip, dorsal, category, sex, position *string, page int, limit int) (*FindParticipantsResult, error)
 }

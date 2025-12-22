@@ -163,3 +163,40 @@ func (s *eventService) Upload(fileHeader *multipart.FileHeader, clientHash strin
 		Reprocessed:     reprocessed,
 	}, nil
 }
+
+func (s *eventService) GetEvents(name *string, date *time.Time, page int, limit int) (*ports.FindEventsResult, error) {
+	if page <= 0 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+
+	result, err := s.eventRepository.Find(name, date, page, limit)
+	if err != nil {
+		return nil, fmt.Errorf("could not get events: %w", err)
+	}
+
+	return result, nil
+}
+
+func (s *eventService) GetParticipants(eventID string, name, chip, dorsal, category, sex, position *string, page int, limit int) (*ports.FindParticipantsResult, error) {
+	if page <= 0 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = 200
+	}
+
+	objID, err := primitive.ObjectIDFromHex(eventID)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrInvalidObjectID, err)
+	}
+
+	result, err := s.eventRepository.FindData(objID, name, chip, dorsal, category, sex, position, page, limit)
+	if err != nil {
+		return nil, fmt.Errorf("could not get participants: %w", err)
+	}
+
+	return result, nil
+}
