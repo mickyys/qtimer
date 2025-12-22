@@ -11,7 +11,7 @@ export default function Events() {
       </div>
 
       {/* Contenido */}
-      <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-12">
+      <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* Header */}
         <header className="mb-8 sm:mb-12 text-center sm:text-left">
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-red-600">
@@ -79,12 +79,18 @@ export default function Events() {
             </p>
 
             <div className="flex flex-wrap gap-2 mb-6">
-              <span className="px-3 py-1 text-xs rounded-full bg-slate-100">XCO</span>
-              <span className="px-3 py-1 text-xs rounded-full bg-slate-100">CAD 3G</span>
+              <span className="px-3 py-1 text-xs rounded-full bg-slate-100">
+                XCO
+              </span>
+              <span className="px-3 py-1 text-xs rounded-full bg-slate-100">
+                CAD 3G
+              </span>
             </div>
 
-            <Link href="/events/1ra-fecha-xco-metropolitano"
-               className="block text-center w-full px-4 py-3 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition">
+            <Link
+              href="/events/1ra-fecha-xco-metropolitano"
+              className="block text-center w-full px-4 py-3 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition"
+            >
               Ver resultados
             </Link>
           </article>
@@ -105,12 +111,18 @@ export default function Events() {
             </p>
 
             <div className="flex flex-wrap gap-2 mb-6">
-              <span className="px-3 py-1 text-xs rounded-full bg-slate-100">XCO</span>
-              <span className="px-3 py-1 text-xs rounded-full bg-slate-100">Juvenil</span>
+              <span className="px-3 py-1 text-xs rounded-full bg-slate-100">
+                XCO
+              </span>
+              <span className="px-3 py-1 text-xs rounded-full bg-slate-100">
+                Juvenil
+              </span>
             </div>
 
-            <Link href="/events/2da-fecha-xco-metropolitano"
-               className="block text-center w-full px-4 py-3 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition">
+            <Link
+              href="/events/2da-fecha-xco-metropolitano"
+              className="block text-center w-full px-4 py-3 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition"
+            >
               Ver resultados
             </Link>
           </article>
@@ -131,12 +143,18 @@ export default function Events() {
             </p>
 
             <div className="flex flex-wrap gap-2 mb-6">
-              <span className="px-3 py-1 text-xs rounded-full bg-slate-100">XCO</span>
-              <span className="px-3 py-1 text-xs rounded-full bg-slate-100">Open</span>
+              <span className="px-3 py-1 text-xs rounded-full bg-slate-100">
+                XCO
+              </span>
+              <span className="px-3 py-1 text-xs rounded-full bg-slate-100">
+                Open
+              </span>
             </div>
 
-            <Link href="/events/3ra-fecha-xco-metropolitano"
-               className="block text-center w-full px-4 py-3 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition">
+            <Link
+              href="/events/3ra-fecha-xco-metropolitano"
+              className="block text-center w-full px-4 py-3 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition"
+            >
               Ver resultados
             </Link>
           </article>
