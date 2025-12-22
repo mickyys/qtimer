@@ -41,9 +41,9 @@ func (r *mongoEventRepository) Save(event *domain.Event) error {
 	return err
 }
 
-func (r *mongoEventRepository) FindByCode(code string) (*domain.Event, error) {
+func (r *mongoEventRepository) FindByName(name string) (*domain.Event, error) {
 	var event domain.Event
-	err := r.getEventCollection().FindOne(context.Background(), bson.M{"code": code}).Decode(&event)
+	err := r.getEventCollection().FindOne(context.Background(), bson.M{"name": name}).Decode(&event)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil

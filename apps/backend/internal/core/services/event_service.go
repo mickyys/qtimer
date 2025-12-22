@@ -65,15 +65,14 @@ func (s *eventService) Upload(fileHeader *multipart.FileHeader, clientHash strin
 	var headers []string
 	reprocessed := false
 
-	// First line: event code and name
+	// First line: event name
 	if scanner.Scan() {
-		parts := strings.Split(scanner.Text(), "|")
-		if len(parts) != 2 {
-			return nil, errors.New("invalid event header format")
+		eventName := scanner.Text()
+		if eventName == "" {
+			return nil, errors.New("event name in header cannot be empty")
 		}
 		event = &domain.Event{
-			Code:     parts[0],
-			Name:     parts[1],
+			Name:     eventName,
 			FileHash: calculatedHash,
 			Date:     time.Now(), // Or parse from file if available
 			Status:   "PUBLISHED",
@@ -117,7 +116,7 @@ func (s *eventService) Upload(fileHeader *multipart.FileHeader, clientHash strin
 	}
 
 	// 5. Database interaction
-	existingEvent, err := s.eventRepository.FindByCode(event.Code)
+	existingEvent, err := s.eventRepository.FindByName(event.Name)
 	if err != nil {
 		return nil, fmt.Errorf("could not check for existing event: %w", err)
 	}
