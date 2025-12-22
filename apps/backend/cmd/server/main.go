@@ -35,6 +35,8 @@ func main() {
 		events := api.Group("/events")
 		{
 			events.POST("/upload", eventHandler.Upload)
+			events.GET("", eventHandler.GetEvents)
+			events.GET("/:id/participants", eventHandler.GetParticipants)
 		}
 	}
 
