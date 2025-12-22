@@ -12,7 +12,7 @@ RUN go mod download
 COPY . .
 
 # Install air for hot-reloading
-RUN go install github.com/cosmtrek/air@latest && air --version
+RUN go install github.com/air-verse/air@latest && air -v
 
 # Expose the port the application runs on
 EXPOSE 8080
