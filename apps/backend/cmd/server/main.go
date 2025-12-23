@@ -7,6 +7,7 @@ import (
 	"backend/pkg/database"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -32,16 +33,24 @@ func main() {
 
 	r := gin.Default()
 
-	// Configure CORS only for local environment
-	if os.Getenv("ENVIRONMENT") == "local" || os.Getenv("ENVIRONMENT") == "" {
-		r.Use(cors.New(cors.Config{
-			AllowOrigins:     []string{"http://localhost:3000"},
-			AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-			AllowHeaders:     []string{"Content-Type", "Authorization"},
-			ExposeHeaders:    []string{"Content-Length"},
-			AllowCredentials: true,
-		}))
+	// Configure CORS
+	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
+	origins := []string{"http://localhost:3000"} // Default
+	if allowedOrigins != "" {
+		origins = strings.Split(allowedOrigins, ",")
+		// Trim spaces just in case
+		for i, origin := range origins {
+			origins[i] = strings.TrimSpace(origin)
+		}
 	}
+
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     origins,
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
 
 	api := r.Group("/api")
 	{
