@@ -1,0 +1,13 @@
+# Docker ignore file
+.git
+.gitignore
+Dockerfile
+Dockerfile.prod
+.air.toml
+tmp
+server
+.env
+.env.example
+node_modules
+dist
+vendor

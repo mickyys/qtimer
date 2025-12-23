@@ -155,9 +155,6 @@ export default function Events() {
           </nav>
         )}
 
-        <footer className="mt-14 sm:mt-20 text-center text-slate-400 text-xs sm:text-sm">
-          © {new Date().getFullYear()} QTimer · Cronometraje deportivo profesional
-        </footer>
       </main>
     </>
   );
