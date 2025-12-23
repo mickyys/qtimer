@@ -3,6 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { getEvents } from "@/services/api"; // Assuming @ is configured for src
+import DatePicker from "@/components/DatePicker";
+import dayjs, { Dayjs } from 'dayjs';
+import 'dayjs/locale/es';
 
 interface Event {
   id: string;
@@ -16,7 +19,7 @@ export default function Events() {
   const [events, setEvents] = useState<Event[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [nameFilter, setNameFilter] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState<Dayjs | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +31,7 @@ export default function Events() {
     setError(null);
     try {
       const { events: fetchedEvents, totalCount: fetchedTotalCount } =
-        await getEvents(nameFilter, dateFilter, currentPage, limit);
+        await getEvents(nameFilter, dateFilter ? dateFilter.format('YYYY-MM-DD') : "", currentPage, limit);
       setEvents(fetchedEvents);
       setTotalCount(fetchedTotalCount);
     } catch (err) {
@@ -68,10 +71,10 @@ export default function Events() {
           </p>
         </header>
 
-        <section className="mb-8 sm:mb-12">
+        <section className="mb-8 sm:mb-12 relative z-10">
           <div className="max-w-3xl mx-auto bg-white/90 backdrop-blur rounded-2xl shadow-lg p-4 sm:p-5">
             <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
+              <div className="relative sm:basis-[70%]">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
                 <input
                   type="text"
@@ -86,16 +89,14 @@ export default function Events() {
                 />
               </div>
 
-              <div className="relative sm:w-60">
-                <input
-                  type="date"
+              <div className="relative sm:basis-[30%]">
+                <DatePicker
                   value={dateFilter}
-                  onChange={(e) => {
-                    setDateFilter(e.target.value);
+                  onChange={(newValue) => {
+                    setDateFilter(newValue);
                     setCurrentPage(1);
                   }}
-                  className="w-full appearance-none px-4 py-3 rounded-xl border border-slate-200 text-slate-800
-                     focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                  placeholder="Seleccionar fecha"
                 />
               </div>
             </div>
@@ -111,17 +112,19 @@ export default function Events() {
         ) : (
           <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-8 justify-items-center">
             {events.map((event) => (
-              <article key={event.id} className="bg-white/95 backdrop-blur rounded-2xl shadow-xl p-5 sm:p-6 text-slate-800 max-w-md w-full">
-                <span className="inline-flex items-center px-3 py-1 mb-4 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700">
-                  ⏱ {event.status === 'PUBLISHED' ? 'Finalizado' : event.status}
-                </span>
-                <h2 className="text-lg sm:text-xl font-bold mb-1">{event.name}</h2>
-                <p className="text-sm text-slate-500 mb-4 leading-relaxed">
-                  🗓 {new Date(event.date).toLocaleDateString("es-ES", { year: 'numeric', month: 'long', day: 'numeric' })}
-                </p>
+              <article key={event.id} className="bg-white/95 backdrop-blur rounded-2xl shadow-xl p-5 sm:p-6 text-slate-800 max-w-md w-full flex flex-col h-full">
+                <div className="flex-grow">
+                  <span className="inline-flex items-center px-3 py-1 mb-4 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700">
+                    ⏱ {event.status === 'PUBLISHED' ? 'Finalizado' : event.status}
+                  </span>
+                  <h2 className="text-lg sm:text-xl font-bold mb-1">{event.name}</h2>
+                  <p className="text-sm text-slate-500 mb-4 leading-relaxed">
+                    🗓 {new Date(event.date).toLocaleDateString("es-ES", { year: 'numeric', month: 'long', day: 'numeric' })}
+                  </p>
+                </div>
                 <Link
                   href={`/events/${event.id}`}
-                  className="block text-center w-full px-4 py-3 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition"
+                  className="block text-center w-full px-4 py-3 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition mt-auto"
                 >
                   Ver resultados
                 </Link>

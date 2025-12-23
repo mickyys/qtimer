@@ -113,6 +113,10 @@ func (r *mongoEventRepository) Find(name *string, date *time.Time, page int, lim
 		return nil, err
 	}
 
+	if events == nil {
+		events = []*domain.Event{}
+	}
+
 	fmt.Println("events", events)
 
 	return &ports.FindEventsResult{
@@ -139,7 +143,7 @@ func (r *mongoEventRepository) FindData(eventID primitive.ObjectID, name, chip, 
 		filter["data.Sexo"] = bson.M{"$regex": *sex, "$options": "i"}
 	}
 	if position != nil {
-		filter["data.General"] = bson.M{"$regex": *position, "$options": "i"}
+		filter["data.POSICION"] = bson.M{"$regex": *position, "$options": "i"}
 	}
 
 	totalCount, err := r.getEventDataCollection().CountDocuments(context.Background(), filter)
@@ -150,7 +154,7 @@ func (r *mongoEventRepository) FindData(eventID primitive.ObjectID, name, chip, 
 	findOptions := options.Find()
 	findOptions.SetSkip(int64((page - 1) * limit))
 	findOptions.SetLimit(int64(limit))
-	findOptions.SetSort(bson.D{{Key: "data.General", Value: 1}})
+	findOptions.SetSort(bson.D{{Key: "data.POSICION", Value: 1}, {Key: "data.General", Value: 1}})
 
 	cursor, err := r.getEventDataCollection().Find(context.Background(), filter, findOptions)
 	if err != nil {
