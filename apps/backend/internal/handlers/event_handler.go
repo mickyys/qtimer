@@ -235,3 +235,150 @@ func (h *EventHandler) GetParticipants(c *gin.Context) {
 	// 3. Return response
 	c.JSON(http.StatusOK, result)
 }
+
+func (h *EventHandler) GetEvent(c *gin.Context) {
+	eventID := c.Param("id")
+
+	event, err := h.eventService.GetEvent(eventID)
+	if err != nil {
+		if errors.Is(err, services.ErrInvalidObjectID) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid event id"})
+		} else if err.Error() == "event not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "event not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, event)
+}
+
+func (h *EventHandler) UpdateEvent(c *gin.Context) {
+	eventID := c.Param("id")
+	var req ports.UpdateEventRequest
+
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+
+	event, err := h.eventService.UpdateEvent(eventID, &req)
+	if err != nil {
+		if errors.Is(err, services.ErrInvalidObjectID) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid event id"})
+		} else if err.Error() == "event not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "event not found"})
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, event)
+}
+
+func (h *EventHandler) DeleteEvent(c *gin.Context) {
+	eventID := c.Param("id")
+
+	err := h.eventService.DeleteEvent(eventID)
+	if err != nil {
+		if errors.Is(err, services.ErrInvalidObjectID) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid event id"})
+		} else if err.Error() == "event not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "event not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "event deleted successfully"})
+}
+
+func (h *EventHandler) UpdateEventStatus(c *gin.Context) {
+	eventID := c.Param("id")
+
+	var req struct {
+		Status string `json:"status"`
+	}
+
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+
+	event, err := h.eventService.UpdateEventStatus(eventID, req.Status)
+	if err != nil {
+		if errors.Is(err, services.ErrInvalidObjectID) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid event id"})
+		} else if err.Error() == "event not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "event not found"})
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, event)
+}
+
+func (h *EventHandler) GetRaces(c *gin.Context) {
+	eventID := c.Param("id")
+
+	races, err := h.eventService.GetRaces(eventID)
+	if err != nil {
+		if errors.Is(err, services.ErrInvalidObjectID) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid event id"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"races": races})
+}
+func (h *EventHandler) UploadToEvent(c *gin.Context) {
+	// 1. Parse multipart form
+	if err := c.Request.ParseMultipartForm(10 << 20); err != nil { // 10 MB
+		c.JSON(http.StatusBadRequest, gin.H{"error": "could not parse multipart form"})
+		return
+	}
+
+	// 2. Get event ID from URL params
+	eventID := c.Param("id")
+	if eventID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "event id is required"})
+		return
+	}
+
+	// 3. Get file from form
+	fileHeader, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "file is required"})
+		return
+	}
+
+	// 4. Get hash from form
+	clientHash := c.PostForm("hash")
+	if clientHash == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "hash is required"})
+		return
+	}
+
+	// 5. Call service
+	result, err := h.eventService.UploadToEvent(fileHeader, clientHash, eventID)
+	if err != nil {
+		if errors.Is(err, services.ErrFileHashMismatch) || errors.Is(err, services.ErrInvalidFileExtension) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		} else if errors.Is(err, services.ErrInvalidObjectID) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid event id"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	// 6. Return success response
+	c.JSON(http.StatusOK, result)
+}

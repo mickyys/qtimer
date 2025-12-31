@@ -106,11 +106,20 @@ export default function CreateEventPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 py-12 px-4">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Crear Nuevo Evento</h1>
-          <p className="text-slate-400">
-            Completa el formulario para crear un nuevo evento manualmente
-          </p>
+        <div className="mb-8 flex items-center gap-4">
+          <button
+            onClick={() => router.push("/admin/dashboard")}
+            className="px-4 py-2 rounded-lg bg-slate-700 text-white hover:bg-slate-600 transition"
+          >
+            ← Dashboard
+          </button>
+          
+          <div>
+            <h1 className="text-4xl font-bold text-white mb-2">Crear Nuevo Evento</h1>
+            <p className="text-slate-400">
+              Completa el formulario para crear un nuevo evento manualmente
+            </p>
+          </div>
         </div>
 
         <div className="bg-slate-800 rounded-lg shadow-xl p-8 border border-slate-700">

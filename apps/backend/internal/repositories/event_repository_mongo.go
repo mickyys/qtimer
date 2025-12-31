@@ -176,3 +176,53 @@ func (r *mongoEventRepository) FindData(eventID primitive.ObjectID, name, chip, 
 		TotalCount:   totalCount,
 	}, nil
 }
+
+func (r *mongoEventRepository) FindByID(id primitive.ObjectID) (*domain.Event, error) {
+	var event domain.Event
+	err := r.getEventCollection().FindOne(context.Background(), bson.M{"_id": id}).Decode(&event)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &event, nil
+}
+
+func (r *mongoEventRepository) Update(id primitive.ObjectID, event *domain.Event) error {
+	_, err := r.getEventCollection().UpdateOne(
+		context.Background(),
+		bson.M{"_id": id},
+		bson.M{"$set": bson.M{
+			"name":          event.Name,
+			"date":          event.Date,
+			"time":          event.Time,
+			"address":       event.Address,
+			"imageUrl":      event.ImageURL,
+			"fileName":      event.FileName,
+			"fileExtension": event.FileExtension,
+			"status":        event.Status,
+		}},
+	)
+	return err
+}
+
+func (r *mongoEventRepository) Delete(id primitive.ObjectID) error {
+	// First delete all associated event data
+	if err := r.DeleteEventData(id); err != nil {
+		return fmt.Errorf("could not delete event data: %w", err)
+	}
+
+	// Then delete the event itself
+	_, err := r.getEventCollection().DeleteOne(context.Background(), bson.M{"_id": id})
+	return err
+}
+
+func (r *mongoEventRepository) UpdateStatus(id primitive.ObjectID, status string) error {
+	_, err := r.getEventCollection().UpdateOne(
+		context.Background(),
+		bson.M{"_id": id},
+		bson.M{"$set": bson.M{"status": status}},
+	)
+	return err
+}

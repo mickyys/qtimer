@@ -2,10 +2,16 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
 interface Event {
   id: string;
-  code: string;
   name: string;
   date: string;
+  time: string;
+  address: string;
+  imageUrl: string;
+  fileName: string;
+  fileExtension: string;
   status: string;
+  createdAt: string;
+  fileHash?: string;
 }
 
 interface EventsResponse {
@@ -108,6 +114,25 @@ export const uploadFile = async (file: File): Promise<UploadResult> => {
   return response.json();
 };
 
+export const uploadFileToEvent = async (file: File, eventId: string): Promise<UploadResult> => {
+  const hash = await calculateSHA256(file);
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("hash", hash);
+
+  const response = await fetch(`${API_URL}/events/${eventId}/upload`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: "Error de red o respuesta inválida" }));
+    throw new Error(errorData.error || `Error HTTP! estado: ${response.status}`);
+  }
+
+  return response.json();
+};
+
 interface CreateEventRequest {
   name: string;
   date: string;
@@ -134,6 +159,72 @@ export const createEvent = async (data: CreateEventRequest): Promise<CreateEvent
       "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: "Error de red o respuesta inválida" }));
+    throw new Error(errorData.error || `Error HTTP! estado: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+export const getEvent = async (eventId: string): Promise<CreateEventResponse> => {
+  const response = await fetch(`${API_URL}/events/${eventId}`);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: "Error de red o respuesta inválida" }));
+    throw new Error(errorData.error || `Error HTTP! estado: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+interface UpdateEventRequest {
+  name: string;
+  date: string;
+  time: string;
+  address: string;
+  imageUrl: string;
+  fileName?: string;
+  fileExtension?: string;
+}
+
+export const updateEvent = async (eventId: string, data: UpdateEventRequest): Promise<CreateEventResponse> => {
+  const response = await fetch(`${API_URL}/events/${eventId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: "Error de red o respuesta inválida" }));
+    throw new Error(errorData.error || `Error HTTP! estado: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+export const deleteEvent = async (eventId: string): Promise<void> => {
+  const response = await fetch(`${API_URL}/events/${eventId}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: "Error de red o respuesta inválida" }));
+    throw new Error(errorData.error || `Error HTTP! estado: ${response.status}`);
+  }
+};
+
+export const updateEventStatus = async (eventId: string, status: string): Promise<CreateEventResponse> => {
+  const response = await fetch(`${API_URL}/events/${eventId}/status`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ status }),
   });
 
   if (!response.ok) {

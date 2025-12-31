@@ -19,9 +19,11 @@ export default function CreateEventForm({ onSuccess }: CreateEventFormProps) {
     time: "",
     address: "",
     imageUrl: "",
+    fileName: "",
+    fileExtension: ".racecheck",
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -41,29 +43,9 @@ export default function CreateEventForm({ onSuccess }: CreateEventFormProps) {
     setIsLoading(true);
 
     try {
-      // Validate form data
+      // Validate form data - solo el nombre es obligatorio
       if (!formData.name.trim()) {
         toast.error("El nombre del evento es requerido");
-        setIsLoading(false);
-        return;
-      }
-      if (!formData.date) {
-        toast.error("La fecha del evento es requerida");
-        setIsLoading(false);
-        return;
-      }
-      if (!formData.time) {
-        toast.error("La hora del evento es requerida");
-        setIsLoading(false);
-        return;
-      }
-      if (!formData.address.trim()) {
-        toast.error("La dirección del evento es requerida");
-        setIsLoading(false);
-        return;
-      }
-      if (!formData.imageUrl.trim()) {
-        toast.error("La URL de la imagen es requerida");
         setIsLoading(false);
         return;
       }
@@ -77,10 +59,12 @@ export default function CreateEventForm({ onSuccess }: CreateEventFormProps) {
           },
           body: JSON.stringify({
             name: formData.name,
-            date: formData.date,
-            time: formData.time,
-            address: formData.address,
-            imageUrl: formData.imageUrl,
+            date: formData.date || null,
+            time: formData.time || null,
+            address: formData.address || null,
+            imageUrl: formData.imageUrl || null,
+            fileName: formData.fileName || null,
+            fileExtension: formData.fileExtension,
           }),
         }
       );
@@ -100,6 +84,8 @@ export default function CreateEventForm({ onSuccess }: CreateEventFormProps) {
         time: "",
         address: "",
         imageUrl: "",
+        fileName: "",
+        fileExtension: ".racecheck",
       });
 
       if (onSuccess) {
@@ -139,7 +125,7 @@ export default function CreateEventForm({ onSuccess }: CreateEventFormProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label htmlFor="date" className="block text-sm font-medium text-white mb-2">
-            Fecha *
+            Fecha
           </label>
           <input
             id="date"
@@ -149,13 +135,12 @@ export default function CreateEventForm({ onSuccess }: CreateEventFormProps) {
             onChange={handleChange}
             className="w-full bg-slate-700 text-white border-slate-600 px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500"
             disabled={isLoading}
-            required
           />
         </div>
 
         <div>
           <label htmlFor="time" className="block text-sm font-medium text-white mb-2">
-            Hora *
+            Hora
           </label>
           <input
             id="time"
@@ -165,14 +150,13 @@ export default function CreateEventForm({ onSuccess }: CreateEventFormProps) {
             onChange={handleChange}
             className="w-full bg-slate-700 text-white border-slate-600 px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500"
             disabled={isLoading}
-            required
           />
         </div>
       </div>
 
       <div>
         <label htmlFor="address" className="block text-sm font-medium text-white mb-2">
-          Dirección del Evento *
+          Dirección del Evento
         </label>
         <input
           id="address"
@@ -183,13 +167,12 @@ export default function CreateEventForm({ onSuccess }: CreateEventFormProps) {
           placeholder="Ej: Calle Principal 123, Ciudad"
           className="w-full bg-slate-700 text-white border-slate-600 placeholder:text-slate-400 px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500"
           disabled={isLoading}
-          required
         />
       </div>
 
       <div>
         <label htmlFor="image" className="block text-sm font-medium text-white mb-2">
-          Imagen del Evento *
+          Imagen del Evento
         </label>
         <ImageUpload
           onImageUpload={handleImageUpload}
@@ -198,6 +181,41 @@ export default function CreateEventForm({ onSuccess }: CreateEventFormProps) {
             // Error ya manejado en el componente
           }}
         />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="fileName" className="block text-sm font-medium text-white mb-2">
+            Nombre del Archivo
+          </label>
+          <input
+            id="fileName"
+            name="fileName"
+            type="text"
+            value={formData.fileName}
+            onChange={handleChange}
+            placeholder="nombre-archivo"
+            className="w-full bg-slate-700 text-white border-slate-600 placeholder:text-slate-400 px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            disabled={isLoading}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="fileExtension" className="block text-sm font-medium text-white mb-2">
+            Tipo de Archivo
+          </label>
+          <select
+            id="fileExtension"
+            name="fileExtension"
+            value={formData.fileExtension}
+            onChange={handleChange}
+            className="w-full bg-slate-700 text-white border-slate-600 px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            disabled={isLoading}
+          >
+            <option value=".racecheck">.racecheck</option>
+            <option value=".xlsx">.xlsx</option>
+          </select>
+        </div>
       </div>
 
       <div className="flex gap-4 pt-6">
