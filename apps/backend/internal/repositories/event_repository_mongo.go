@@ -167,19 +167,50 @@ func (r *mongoEventRepository) Find(name *string, date *time.Time, page int, lim
 	}, nil
 }
 
-func (r *mongoEventRepository) FindData(eventID primitive.ObjectID, name, chip, dorsal, category, sex, position *string, page int, limit int) (*ports.FindParticipantsResult, error) {
+func (r *mongoEventRepository) FindData(eventID primitive.ObjectID, name, chip, dorsal, category, distance, sex, position *string, page int, limit int) (*ports.FindParticipantsResult, error) {
 	filter := bson.M{"eventId": eventID}
 	var orConditions []bson.M
 
-	// Para nombre, categoría y sexo, usar regex ya que son siempre strings
+	// Para nombre, buscar en múltiples campos con case-insensitive
 	if name != nil {
-		filter["data.Nombre"] = bson.M{"$regex": *name, "$options": "i"}
+		nameRegex := bson.M{"$regex": *name, "$options": "i"}
+		orConditions = append(orConditions,
+			bson.M{"data.Nombre": nameRegex},
+			bson.M{"data.NOMBRE": nameRegex},
+			bson.M{"data.name": nameRegex},
+			bson.M{"data.nombre": nameRegex},
+		)
 	}
+
+	// Para categoría, buscar en múltiples campos con case-insensitive
 	if category != nil {
-		filter["data.Categoría"] = bson.M{"$regex": *category, "$options": "i"}
+		categoryRegex := bson.M{"$regex": *category, "$options": "i"}
+		orConditions = append(orConditions,
+			bson.M{"data.Categoría": categoryRegex},
+			bson.M{"data.CATEGORIA": categoryRegex},
+			bson.M{"data.category": categoryRegex},
+			bson.M{"data.categoria": categoryRegex},
+		)
 	}
+
+	// Para distancia, buscar en múltiples campos con case-insensitive
+	if distance != nil {
+		distanceRegex := bson.M{"$regex": *distance, "$options": "i"}
+		orConditions = append(orConditions,
+			bson.M{"data.MODALIDAD": distanceRegex},
+			bson.M{"data.distance": distanceRegex},
+			bson.M{"data.distancia": distanceRegex},
+		)
+	}
+
+	// Para sexo, buscar en múltiples campos con case-insensitive
 	if sex != nil {
-		filter["data.Sexo"] = bson.M{"$regex": *sex, "$options": "i"}
+		sexRegex := bson.M{"$regex": *sex, "$options": "i"}
+		orConditions = append(orConditions,
+			bson.M{"data.Sexo": sexRegex},
+			bson.M{"data.SEXO": sexRegex},
+			bson.M{"data.sex": sexRegex},
+		)
 	}
 
 	// Para chip, dorsal y posición, buscar tanto como string como número

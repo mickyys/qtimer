@@ -35,7 +35,7 @@ type EventRepository interface {
 	DeleteEventData(eventID primitive.ObjectID) error
 	SaveAllData(data []domain.EventData) (int, error)
 	Find(name *string, date *time.Time, page int, limit int) (*FindEventsResult, error)
-	FindData(eventID primitive.ObjectID, name, chip, dorsal, category, sex, position *string, page int, limit int) (*FindParticipantsResult, error)
+	FindData(eventID primitive.ObjectID, name, chip, dorsal, category, distance, sex, position *string, page int, limit int) (*FindParticipantsResult, error)
 }
 
 type RaceRepository interface {

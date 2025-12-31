@@ -192,6 +192,7 @@ func (h *EventHandler) GetParticipants(c *gin.Context) {
 	chip := c.Query("chip")
 	dorsal := c.Query("dorsal")
 	category := c.Query("category")
+	distance := c.Query("distance")
 	sex := c.Query("sex")
 	position := c.Query("position")
 	pageStr := c.Query("page")
@@ -246,7 +247,7 @@ func (h *EventHandler) GetParticipants(c *gin.Context) {
 	}
 
 	// 2. Call service
-	result, err := h.eventService.GetParticipants(eventID, toPtr(name), toPtr(chip), toPtr(dorsal), toPtr(category), toPtr(sex), toPtr(position), page, limit)
+	result, err := h.eventService.GetParticipants(eventID, toPtr(name), toPtr(chip), toPtr(dorsal), toPtr(category), toPtr(distance), toPtr(sex), toPtr(position), page, limit)
 	if err != nil {
 		if errors.Is(err, services.ErrInvalidObjectID) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

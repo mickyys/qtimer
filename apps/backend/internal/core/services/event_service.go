@@ -234,7 +234,7 @@ func (s *eventService) GetEvents(name *string, date *time.Time, page int, limit 
 	return result, nil
 }
 
-func (s *eventService) GetParticipants(eventID string, name, chip, dorsal, category, sex, position *string, page int, limit int) (*ports.FindParticipantsResult, error) {
+func (s *eventService) GetParticipants(eventID string, name, chip, dorsal, category, distance, sex, position *string, page int, limit int) (*ports.FindParticipantsResult, error) {
 	if page <= 0 {
 		page = 1
 	}
@@ -247,7 +247,7 @@ func (s *eventService) GetParticipants(eventID string, name, chip, dorsal, categ
 		return nil, fmt.Errorf("%w: %v", ErrInvalidObjectID, err)
 	}
 
-	result, err := s.eventRepository.FindData(objID, name, chip, dorsal, category, sex, position, page, limit)
+	result, err := s.eventRepository.FindData(objID, name, chip, dorsal, category, distance, sex, position, page, limit)
 	if err != nil {
 		return nil, fmt.Errorf("could not get participants: %w", err)
 	}

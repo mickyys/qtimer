@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Filter, Trophy, Medal, Award, ChevronDown, X, MapPin, Calendar, Timer, TrendingUp, User } from 'lucide-react';
 import { getParticipantsBySlug } from '../services/api';
 
@@ -29,7 +29,15 @@ interface ProcessedParticipant {
   previousRaces?: number;
 }
 
-
+// Función para capitalizar nombres
+const capitalizeString = (str: string): string => {
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
 
 interface MarathonResultsProps {
   eventSlug: string;
@@ -38,6 +46,8 @@ interface MarathonResultsProps {
 export function MarathonResults({ eventSlug }: MarathonResultsProps) {
   const [selectedDistance, setSelectedDistance] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [searchName, setSearchName] = useState<string>('');
+  const [searchBib, setSearchBib] = useState<string>('');
   const [selectedParticipant, setSelectedParticipant] = useState<ProcessedParticipant | null>(null);
   const [participants, setParticipants] = useState<ProcessedParticipant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,18 +60,18 @@ export function MarathonResults({ eventSlug }: MarathonResultsProps) {
       
       return {
         position: parseInt(data.POSICION || data.position || (index + 1).toString()),
-        name: data.NOMBRE || data.name || data.nombre || 'N/A',
+        name: capitalizeString(data.NOMBRE || data.name || data.nombre || 'N/A'),
         bib: data.DORSAL || data.bib || data.dorsal || 'N/A',
-        category: data.CATEGORIA || data.category || data.categoria || 'N/A',
-        distance: data.MODALIDAD || data.distance || data.distancia || 'N/A',
+        category: capitalizeString(data.CATEGORIA || data.category || data.categoria || 'N/A'),
+        distance: capitalizeString(data.MODALIDAD || data.distance || data.distancia || 'N/A'),
         time: data.TIEMPO || data.time || data.tiempo || 'N/A',
         pace: data.RITMO || data.pace || data.ritmo || 'N/A',
         age: parseInt(data.EDAD || data.age || data.edad || '0'),
         categoryPosition: parseInt(data['POS.CAT.'] || data.categoryPosition || data.posicionCategoria || '0'),
-        city: data.CIUDAD || data.city || data.ciudad,
-        team: data.EQUIPO || data.team || data.equipo,
+        city: capitalizeString(data.CIUDAD || data.city || data.ciudad || ''),
+        team: capitalizeString(data.EQUIPO || data.team || data.equipo || ''),
         chip: data.CHIP || data.chip,
-        sex: data.SEXO || data.sex || data.sexo,
+        sex: capitalizeString(data.SEXO || data.sex || data.sexo || ''),
         splitTimes: data.splitTimes ? data.splitTimes.split(',') : undefined,
         personalBest: data.personalBest || data.mejorTiempo,
         previousRaces: data.previousRaces ? parseInt(data.previousRaces) : undefined
@@ -69,37 +79,63 @@ export function MarathonResults({ eventSlug }: MarathonResultsProps) {
     });
   };
 
-  // useEffect para cargar los participantes
-  useEffect(() => {
-    const loadParticipants = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await getParticipantsBySlug(eventSlug, {}, 1, 1000);
-        const processedData = processParticipants(response.participants);
-        setParticipants(processedData);
-      } catch (err) {
-        console.error('Error loading participants:', err);
-        setError(err instanceof Error ? err.message : 'Error desconocido al cargar participantes');
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    if (eventSlug) {
-      loadParticipants();
-    }
-  }, [eventSlug]);
 
   // Obtener distancias y categorías únicas de los datos
   const distances = Array.from(new Set(participants.map(p => p.distance).filter(d => d !== 'N/A')));
   const categories = Array.from(new Set(participants.map(p => p.category).filter(c => c !== 'N/A')));
 
-  const filteredParticipants = participants.filter(participant => {
-    const distanceMatch = selectedDistance === 'all' || participant.distance === selectedDistance;
-    const categoryMatch = selectedCategory === 'all' || participant.category === selectedCategory;
-    return distanceMatch && categoryMatch;
-  });
+  // Función para cargar participantes con filtros
+  const loadParticipantsWithFilters = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Construir objeto de filtros para la API
+      const filters: { [key: string]: string } = {};
+      if (selectedDistance !== 'all') filters.distance = selectedDistance;
+      if (selectedCategory !== 'all') filters.category = selectedCategory;
+      if (searchName.trim() !== '') filters.name = searchName.trim();
+      if (searchBib.trim() !== '') filters.dorsal = searchBib.trim();
+      
+      const response = await getParticipantsBySlug(eventSlug, filters, 1, 1000);
+      const processedData = processParticipants(response.participants);
+      setParticipants(processedData);
+    } catch (err) {
+      console.error('Error loading participants:', err);
+      setError(err instanceof Error ? err.message : 'Error desconocido al cargar participantes');
+    } finally {
+      setLoading(false);
+    }
+  }, [eventSlug, selectedDistance, selectedCategory, searchName, searchBib]);
+
+  // Debounce para búsquedas de texto
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (eventSlug) {
+        loadParticipantsWithFilters();
+      }
+    }, searchName || searchBib ? 500 : 0); // 500ms de delay para búsquedas de texto
+
+    return () => clearTimeout(timeoutId);
+  }, [loadParticipantsWithFilters, searchName, searchBib, eventSlug]);
+
+  // Efecto para cambios inmediatos en filtros de selección
+  useEffect(() => {
+    if (eventSlug) {
+      loadParticipantsWithFilters();
+    }
+  }, [selectedDistance, selectedCategory, eventSlug]);
+
+  // Los participantes mostrados ahora son todos los que vienen del servidor
+  const filteredParticipants = participants;
+
+  // Función para manejar entrada numérica del dorsal
+  const handleBibChange = (value: string) => {
+    // Solo permitir números
+    const numericValue = value.replace(/[^0-9]/g, '');
+    setSearchBib(numericValue);
+  };
 
   const getMedalIcon = (position: number) => {
     if (position === 1) return <Trophy className="w-5 h-5 text-yellow-500" />;
@@ -168,62 +204,177 @@ export function MarathonResults({ eventSlug }: MarathonResultsProps) {
             <h2 className="text-gray-900">Filtros</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Distance Filter - Dropdown for many options */}
+          {/* Search Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {/* Search by Name */}
             <div>
-              <label className="block text-gray-700 mb-3">Distancia</label>
+              <label className="block text-gray-700 mb-3">Buscar por Nombre</label>
               <div className="relative">
-                <select
-                  value={selectedDistance}
-                  onChange={(e) => setSelectedDistance(e.target.value)}
-                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg appearance-none cursor-pointer text-gray-700 hover:border-red-600 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-colors"
-                >
-                  <option value="all">Todas las distancias</option>
-                  {distances.map(distance => (
-                    <option key={distance} value={distance}>
-                      {distance}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value)}
+                  placeholder="Escribe el nombre del participante..."
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-700 placeholder-gray-400 hover:border-red-600 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-colors"
+                />
+                {loading && searchName && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="animate-spin h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full"></div>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Category Filter - Buttons for fewer options */}
+            {/* Search by Bib (Dorsal) */}
             <div>
-              <label className="block text-gray-700 mb-3">Categoría</label>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setSelectedCategory('all')}
-                  className={`px-4 py-2 rounded-lg transition-colors ${
-                    selectedCategory === 'all'
-                      ? 'bg-red-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  Todas
-                </button>
-                {categories.map(category => (
-                  <button
-                    key={category}
-                    onClick={() => setSelectedCategory(category)}
-                    className={`px-4 py-2 rounded-lg transition-colors text-sm ${
-                      selectedCategory === category
-                        ? 'bg-red-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {category}
-                  </button>
-                ))}
+              <label className="block text-gray-700 mb-3">Buscar por Dorsal</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchBib}
+                  onChange={(e) => handleBibChange(e.target.value)}
+                  placeholder="Escribe el número de dorsal..."
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-700 placeholder-gray-400 hover:border-red-600 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-colors"
+                />
+                {loading && searchBib && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="animate-spin h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full"></div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <p className="text-gray-600 text-sm">
-              Mostrando <span className="text-red-600">{filteredParticipants.length}</span> resultados
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Distance Filter - Dynamic: select if more than 4, buttons if 4 or less */}
+            <div>
+              <label className="block text-gray-700 mb-3">Distancia</label>
+              {distances.length > 4 ? (
+                <div className="relative">
+                  <select
+                    value={selectedDistance}
+                    onChange={(e) => setSelectedDistance(e.target.value)}
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg appearance-none cursor-pointer text-gray-700 hover:border-red-600 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-colors"
+                  >
+                    <option value="all">Todas las distancias</option>
+                    {distances.map(distance => (
+                      <option key={distance} value={distance}>
+                        {distance}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setSelectedDistance('all')}
+                    className={`px-4 py-2 rounded-lg transition-colors ${
+                      selectedDistance === 'all'
+                        ? 'bg-red-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Todas
+                  </button>
+                  {distances.map(distance => (
+                    <button
+                      key={distance}
+                      onClick={() => setSelectedDistance(distance)}
+                      className={`px-4 py-2 rounded-lg transition-colors text-sm ${
+                        selectedDistance === distance
+                          ? 'bg-red-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {distance}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Category Filter - Dynamic: select if more than 4, buttons if 4 or less */}
+            <div>
+              <label className="block text-gray-700 mb-3">Categoría</label>
+              {categories.length > 4 ? (
+                <div className="relative">
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg appearance-none cursor-pointer text-gray-700 hover:border-red-600 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-colors"
+                  >
+                    <option value="all">Todas las categorías</option>
+                    {categories.map(category => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setSelectedCategory('all')}
+                    className={`px-4 py-2 rounded-lg transition-colors ${
+                      selectedCategory === 'all'
+                        ? 'bg-red-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Todas
+                  </button>
+                  {categories.map(category => (
+                    <button
+                      key={category}
+                      onClick={() => setSelectedCategory(category)}
+                      className={`px-4 py-2 rounded-lg transition-colors text-sm ${
+                        selectedCategory === category
+                          ? 'bg-red-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {category}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <p className="text-gray-600 text-sm">
+                {(selectedDistance !== 'all' || selectedCategory !== 'all' || searchName !== '' || searchBib !== '') ? (
+                  <>Encontrados: <span className="text-red-600 font-semibold">{filteredParticipants.length}</span> participantes</>
+                ) : (
+                  <>Total: <span className="text-red-600 font-semibold">{filteredParticipants.length}</span> participantes</>
+                )}
+              </p>
+              {loading && (
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+                  <div className="animate-spin h-3 w-3 border border-gray-400 border-t-transparent rounded-full"></div>
+                  Buscando...
+                </div>
+              )}
+            </div>
+            
+            {/* Clear Filters Button */}
+            {(selectedDistance !== 'all' || selectedCategory !== 'all' || searchName !== '' || searchBib !== '') && (
+              <button
+                onClick={() => {
+                  setSelectedDistance('all');
+                  setSelectedCategory('all');
+                  setSearchName('');
+                  setSearchBib('');
+                }}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4" />
+                Limpiar filtros
+              </button>
+            )}
           </div>
         </div>
 
