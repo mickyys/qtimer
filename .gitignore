@@ -25,3 +25,4 @@ pnpm-debug.log*
 .env
 main
 /apps/backend/.env
+air.log

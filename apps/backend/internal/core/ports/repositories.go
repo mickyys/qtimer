@@ -25,11 +25,13 @@ type FindRacesResult struct {
 type EventRepository interface {
 	Save(event *domain.Event) error
 	FindByName(name string) (*domain.Event, error)
+	FindBySlug(slug string) (*domain.Event, error)
 	FindByID(id primitive.ObjectID) (*domain.Event, error)
 	Update(id primitive.ObjectID, event *domain.Event) error
 	Delete(id primitive.ObjectID) error
 	UpdateStatus(id primitive.ObjectID, status string) error
 	UpdateFileHash(id primitive.ObjectID, hash string) error
+	UpdateFileStats(id primitive.ObjectID, hash string, uniqueModalities []string, uniqueCategories []string, recordsCount int) error
 	DeleteEventData(eventID primitive.ObjectID) error
 	SaveAllData(data []domain.EventData) (int, error)
 	Find(name *string, date *time.Time, page int, limit int) (*FindEventsResult, error)

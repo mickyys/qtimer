@@ -19,7 +19,7 @@ export function EventCard({
   location,
   imageUrl,
   status,
-  distances,
+  distances = [],
   participants,
   onViewResults
 }: EventCardProps) {
@@ -27,22 +27,33 @@ export function EventCard({
     <div className="bg-white rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 max-w-sm">
       {/* Image Section */}
       <div className="relative h-48 overflow-hidden">
-        <img 
-          src={imageUrl} 
-          alt={title}
-          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-        />
+        {imageUrl ? (
+          <img 
+            src={imageUrl} 
+            alt={title}
+            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-slate-400">
+            <div className="text-center">
+              <div className="text-2xl mb-2">🏃‍♂️</div>
+              <p className="text-sm">Sin imagen</p>
+            </div>
+          </div>
+        )}
         <div className="absolute top-4 left-4">
           <span className="bg-red-600 text-white px-3 py-1 rounded-full text-sm">
             {status}
           </span>
         </div>
-        <div className="absolute top-4 right-4">
-          <span className="bg-black/70 text-white px-3 py-1 rounded-full text-sm flex items-center gap-1">
-            <Users className="w-4 h-4" />
-            {participants}
-          </span>
-        </div>
+        {participants !== undefined && participants > 0 && (
+          <div className="absolute top-4 right-4">
+            <span className="bg-black/70 text-white px-3 py-1 rounded-full text-sm flex items-center gap-1">
+              <Users className="w-4 h-4" />
+              {participants}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Content Section */}

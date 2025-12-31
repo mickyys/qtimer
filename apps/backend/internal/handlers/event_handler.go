@@ -1,14 +1,17 @@
 package handlers
 
 import (
+	"backend/internal/core/domain"
 	"backend/internal/core/ports"
 	"backend/internal/core/services"
+	"backend/internal/utils"
 	"errors"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type EventHandler struct {
@@ -184,7 +187,7 @@ func (h *EventHandler) UploadImageToCloudinary(c *gin.Context) {
 
 func (h *EventHandler) GetParticipants(c *gin.Context) {
 	// 1. Get path and query params
-	eventID := c.Param("id")
+	eventParam := c.Param("id") // This could be either ID or slug
 	name := c.Query("name")
 	chip := c.Query("chip")
 	dorsal := c.Query("dorsal")
@@ -193,6 +196,27 @@ func (h *EventHandler) GetParticipants(c *gin.Context) {
 	position := c.Query("position")
 	pageStr := c.Query("page")
 	limitStr := c.Query("limit")
+
+	// Resolve event to get the ID
+	var eventID string
+	if primitive.IsValidObjectID(eventParam) {
+		eventID = eventParam
+	} else if utils.IsValidSlug(eventParam) {
+		// If it's a slug, get the event to extract the ID
+		event, err := h.eventService.GetEventBySlug(eventParam)
+		if err != nil {
+			if err.Error() == "event not found" {
+				c.JSON(http.StatusNotFound, gin.H{"error": "event not found"})
+			} else {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			}
+			return
+		}
+		eventID = event.ID.Hex()
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid event identifier"})
+		return
+	}
 
 	var page, limit int
 	var err error
@@ -237,9 +261,22 @@ func (h *EventHandler) GetParticipants(c *gin.Context) {
 }
 
 func (h *EventHandler) GetEvent(c *gin.Context) {
-	eventID := c.Param("id")
+	eventParam := c.Param("id") // This could be either ID or slug
 
-	event, err := h.eventService.GetEvent(eventID)
+	var event *domain.Event
+	var err error
+
+	// First try to get by ID if the param looks like a valid ObjectID
+	if primitive.IsValidObjectID(eventParam) {
+		event, err = h.eventService.GetEvent(eventParam)
+	} else if utils.IsValidSlug(eventParam) {
+		// If it's not a valid ObjectID, try to get by slug
+		event, err = h.eventService.GetEventBySlug(eventParam)
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid event identifier"})
+		return
+	}
+
 	if err != nil {
 		if errors.Is(err, services.ErrInvalidObjectID) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid event id"})

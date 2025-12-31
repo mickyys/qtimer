@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"backend/internal/core/domain"
@@ -35,6 +36,21 @@ func (r *mongoEventRepository) getEventDataCollection() *mongo.Collection {
 	return r.db.Database(r.dbName).Collection("event_data")
 }
 
+// parseSearchValue intenta convertir un valor de búsqueda string a número si es posible
+func parseSearchValue(value string) (interface{}, error) {
+	// Intentar parsear como entero
+	if intVal, err := strconv.Atoi(value); err == nil {
+		return intVal, nil
+	}
+
+	// Intentar parsear como float
+	if floatVal, err := strconv.ParseFloat(value, 64); err == nil {
+		return floatVal, nil
+	}
+
+	return nil, fmt.Errorf("cannot parse as number")
+}
+
 func (r *mongoEventRepository) Save(event *domain.Event) error {
 	event.CreatedAt = time.Now()
 	_, err := r.getEventCollection().InsertOne(context.Background(), event)
@@ -53,11 +69,37 @@ func (r *mongoEventRepository) FindByName(name string) (*domain.Event, error) {
 	return &event, nil
 }
 
+func (r *mongoEventRepository) FindBySlug(slug string) (*domain.Event, error) {
+	var event domain.Event
+	err := r.getEventCollection().FindOne(context.Background(), bson.M{"slug": slug}).Decode(&event)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &event, nil
+}
+
 func (r *mongoEventRepository) UpdateFileHash(id primitive.ObjectID, hash string) error {
 	_, err := r.getEventCollection().UpdateOne(
 		context.Background(),
 		bson.M{"_id": id},
 		bson.M{"$set": bson.M{"fileHash": hash}},
+	)
+	return err
+}
+
+func (r *mongoEventRepository) UpdateFileStats(id primitive.ObjectID, hash string, uniqueModalities []string, uniqueCategories []string, recordsCount int) error {
+	_, err := r.getEventCollection().UpdateOne(
+		context.Background(),
+		bson.M{"_id": id},
+		bson.M{"$set": bson.M{
+			"fileHash":         hash,
+			"uniqueModalities": uniqueModalities,
+			"uniqueCategories": uniqueCategories,
+			"recordsCount":     recordsCount,
+		}},
 	)
 	return err
 }
@@ -127,14 +169,11 @@ func (r *mongoEventRepository) Find(name *string, date *time.Time, page int, lim
 
 func (r *mongoEventRepository) FindData(eventID primitive.ObjectID, name, chip, dorsal, category, sex, position *string, page int, limit int) (*ports.FindParticipantsResult, error) {
 	filter := bson.M{"eventId": eventID}
+	var orConditions []bson.M
+
+	// Para nombre, categoría y sexo, usar regex ya que son siempre strings
 	if name != nil {
 		filter["data.Nombre"] = bson.M{"$regex": *name, "$options": "i"}
-	}
-	if chip != nil {
-		filter["data.Chip"] = bson.M{"$regex": *chip, "$options": "i"}
-	}
-	if dorsal != nil {
-		filter["data.Dorsal"] = bson.M{"$regex": *dorsal, "$options": "i"}
 	}
 	if category != nil {
 		filter["data.Categoría"] = bson.M{"$regex": *category, "$options": "i"}
@@ -142,8 +181,47 @@ func (r *mongoEventRepository) FindData(eventID primitive.ObjectID, name, chip, 
 	if sex != nil {
 		filter["data.Sexo"] = bson.M{"$regex": *sex, "$options": "i"}
 	}
+
+	// Para chip, dorsal y posición, buscar tanto como string como número
+	if chip != nil {
+		if chipNum, err := parseSearchValue(*chip); err == nil {
+			orConditions = append(orConditions,
+				bson.M{"data.Chip": chipNum},
+				bson.M{"data.Chip": bson.M{"$regex": *chip, "$options": "i"}},
+			)
+		} else {
+			filter["data.Chip"] = bson.M{"$regex": *chip, "$options": "i"}
+		}
+	}
+	if dorsal != nil {
+		if dorsalNum, err := parseSearchValue(*dorsal); err == nil {
+			orConditions = append(orConditions,
+				bson.M{"data.Dorsal": dorsalNum},
+				bson.M{"data.Dorsal": bson.M{"$regex": *dorsal, "$options": "i"}},
+			)
+		} else {
+			filter["data.Dorsal"] = bson.M{"$regex": *dorsal, "$options": "i"}
+		}
+	}
 	if position != nil {
-		filter["data.POSICION"] = bson.M{"$regex": *position, "$options": "i"}
+		if posNum, err := parseSearchValue(*position); err == nil {
+			orConditions = append(orConditions,
+				bson.M{"data.POSICION": posNum},
+				bson.M{"data.POSICION": bson.M{"$regex": *position, "$options": "i"}},
+			)
+		} else {
+			filter["data.POSICION"] = bson.M{"$regex": *position, "$options": "i"}
+		}
+	}
+
+	// Si hay condiciones OR, agregarlas al filtro
+	if len(orConditions) > 0 {
+		if existingOr, ok := filter["$or"]; ok {
+			// Combinar con condiciones OR existentes
+			filter["$or"] = append(existingOr.([]bson.M), orConditions...)
+		} else {
+			filter["$or"] = orConditions
+		}
 	}
 
 	totalCount, err := r.getEventDataCollection().CountDocuments(context.Background(), filter)
@@ -151,12 +229,25 @@ func (r *mongoEventRepository) FindData(eventID primitive.ObjectID, name, chip, 
 		return nil, err
 	}
 
-	findOptions := options.Find()
-	findOptions.SetSkip(int64((page - 1) * limit))
-	findOptions.SetLimit(int64(limit))
-	findOptions.SetSort(bson.D{{Key: "data.POSICION", Value: 1}, {Key: "data.General", Value: 1}})
+	// Usar agregación para ordenar correctamente la posición como número
+	pipeline := []bson.M{
+		{"$match": filter},
+		{
+			"$addFields": bson.M{
+				"posicionNumerica": bson.M{
+					"$toInt": bson.M{
+						"$ifNull": []interface{}{"$data.POSICION", 999999},
+					},
+				},
+			},
+		},
+		{"$sort": bson.M{"data.MODALIDAD": 1, "posicionNumerica": 1, "_id": 1}},
+		{"$skip": int64((page - 1) * limit)},
+		{"$limit": int64(limit)},
+		{"$project": bson.M{"posicionNumerica": 0}}, // Remover campo temporal
+	}
 
-	cursor, err := r.getEventDataCollection().Find(context.Background(), filter, findOptions)
+	cursor, err := r.getEventDataCollection().Aggregate(context.Background(), pipeline)
 	if err != nil {
 		return nil, err
 	}
@@ -194,14 +285,17 @@ func (r *mongoEventRepository) Update(id primitive.ObjectID, event *domain.Event
 		context.Background(),
 		bson.M{"_id": id},
 		bson.M{"$set": bson.M{
-			"name":          event.Name,
-			"date":          event.Date,
-			"time":          event.Time,
-			"address":       event.Address,
-			"imageUrl":      event.ImageURL,
-			"fileName":      event.FileName,
-			"fileExtension": event.FileExtension,
-			"status":        event.Status,
+			"name":             event.Name,
+			"date":             event.Date,
+			"time":             event.Time,
+			"address":          event.Address,
+			"imageUrl":         event.ImageURL,
+			"fileName":         event.FileName,
+			"fileExtension":    event.FileExtension,
+			"status":           event.Status,
+			"uniqueModalities": event.UniqueModalities,
+			"uniqueCategories": event.UniqueCategories,
+			"recordsCount":     event.RecordsCount,
 		}},
 	)
 	return err

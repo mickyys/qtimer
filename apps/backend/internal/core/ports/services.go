@@ -37,6 +37,7 @@ type EventService interface {
 	UploadToEvent(file *multipart.FileHeader, clientHash string, eventID string) (*UploadResult, error)
 	CreateEvent(req *CreateEventRequest) (*domain.Event, error)
 	GetEvent(id string) (*domain.Event, error)
+	GetEventBySlug(slug string) (*domain.Event, error)
 	UpdateEvent(id string, req *UpdateEventRequest) (*domain.Event, error)
 	DeleteEvent(id string) error
 	UpdateEventStatus(id string, status string) (*domain.Event, error)

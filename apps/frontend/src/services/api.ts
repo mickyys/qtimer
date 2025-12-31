@@ -79,6 +79,33 @@ export const getParticipants = async (
   return response.json();
 };
 
+// Función para obtener participantes por slug del evento
+export const getParticipantsBySlug = async (
+  eventSlug: string,
+  filters: { [key: string]: string } = {},
+  page: number = 1,
+  limit: number = 200
+): Promise<ParticipantsResponse> => {
+  const params = new URLSearchParams();
+  for (const key in filters) {
+    if (filters[key]) {
+      params.append(key, filters[key]);
+    }
+  }
+  params.append("page", page.toString());
+  params.append("limit", limit.toString());
+
+  const response = await fetch(
+    `${API_URL}/events/${eventSlug}/participants?${params.toString()}`
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch participants");
+  }
+
+  return response.json();
+};
+
 // Helper to calculate SHA-256 hash
 const calculateSHA256 = async (file: File): Promise<string> => {
   const buffer = await file.arrayBuffer();

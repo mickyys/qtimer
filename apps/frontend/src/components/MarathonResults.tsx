@@ -1,7 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Filter, Trophy, Medal, Award, ChevronDown, X, MapPin, Calendar, Timer, TrendingUp, User } from 'lucide-react';
+import { getParticipantsBySlug } from '../services/api';
 
 interface Participant {
+  id: string;
+  eventId: string;
+  data: {
+    [key: string]: string;
+  };
+}
+
+interface ProcessedParticipant {
   position: number;
   name: string;
   bib: string;
@@ -13,63 +22,80 @@ interface Participant {
   categoryPosition: number;
   city?: string;
   team?: string;
+  chip?: string;
+  sex?: string;
   splitTimes?: string[];
   personalBest?: string;
   previousRaces?: number;
 }
 
-const mockParticipants: Participant[] = [
-  // 5K - Senior A Varones
-  { position: 1, name: 'Carlos Rodríguez', bib: '001', category: 'Senior A Varones', distance: '5K', time: '16:23', pace: '3:17', age: 28, categoryPosition: 1, city: 'Madrid', team: 'Club Atlético Madrid', splitTimes: ['8:10', '8:13'], personalBest: '15:58', previousRaces: 12 },
-  { position: 2, name: 'Miguel Santos', bib: '015', category: 'Senior A Varones', distance: '5K', time: '16:45', pace: '3:21', age: 26, categoryPosition: 2, city: 'Barcelona', team: 'Runners BCN', splitTimes: ['8:20', '8:25'], personalBest: '16:20', previousRaces: 8 },
-  { position: 3, name: 'Pedro Martínez', bib: '023', category: 'Senior A Varones', distance: '5K', time: '17:12', pace: '3:26', age: 29, categoryPosition: 3, city: 'Valencia', team: 'Valencia Running', splitTimes: ['8:35', '8:37'], personalBest: '16:45', previousRaces: 15 },
-  { position: 4, name: 'Luis García', bib: '034', category: 'Senior A Varones', distance: '5K', time: '17:38', pace: '3:32', age: 27, categoryPosition: 4, city: 'Sevilla', team: 'Independiente', splitTimes: ['8:48', '8:50'], personalBest: '17:10', previousRaces: 6 },
-  { position: 5, name: 'Antonio López', bib: '042', category: 'Senior A Varones', distance: '5K', time: '17:55', pace: '3:35', age: 25, categoryPosition: 5, city: 'Bilbao', team: 'Athletic Bilbao Running', splitTimes: ['8:55', '9:00'], personalBest: '17:30', previousRaces: 10 },
-  { position: 6, name: 'Jorge Moreno', bib: '045', category: 'Senior A Varones', distance: '5K', time: '18:10', pace: '3:38', age: 28, categoryPosition: 6, city: 'Madrid', team: 'Independiente', splitTimes: ['9:05', '9:05'], personalBest: '17:45', previousRaces: 9 },
-  { position: 7, name: 'Daniel Silva', bib: '047', category: 'Senior A Varones', distance: '5K', time: '18:25', pace: '3:41', age: 27, categoryPosition: 7, city: 'Barcelona', team: 'Runners BCN', splitTimes: ['9:12', '9:13'], personalBest: '18:00', previousRaces: 11 },
-  { position: 8, name: 'Alberto Ramos', bib: '049', category: 'Senior A Varones', distance: '5K', time: '18:38', pace: '3:44', age: 26, categoryPosition: 8, city: 'Valencia', team: 'Valencia Running', splitTimes: ['9:18', '9:20'], personalBest: '18:15', previousRaces: 7 },
-  { position: 9, name: 'Raúl Fernández', bib: '051', category: 'Senior A Varones', distance: '5K', time: '18:52', pace: '3:46', age: 29, categoryPosition: 9, city: 'Sevilla', team: 'Independiente', splitTimes: ['9:25', '9:27'], personalBest: '18:30', previousRaces: 13 },
-  { position: 10, name: 'Pablo Hernández', bib: '053', category: 'Senior A Varones', distance: '5K', time: '19:05', pace: '3:49', age: 28, categoryPosition: 10, city: 'Madrid', team: 'Club Running', splitTimes: ['9:30', '9:35'], personalBest: '18:45', previousRaces: 8 },
-  
-  // 5K - Todo Competidor Varones
-  { position: 1, name: 'Juan Pérez', bib: '052', category: 'Todo Competidor Varones', distance: '5K', time: '18:30', pace: '3:42', age: 35, categoryPosition: 1, city: 'Zaragoza', team: 'Independiente', splitTimes: ['9:10', '9:20'], personalBest: '18:00', previousRaces: 5 },
-  { position: 2, name: 'Roberto Díaz', bib: '063', category: 'Todo Competidor Varones', distance: '5K', time: '19:15', pace: '3:51', age: 42, categoryPosition: 2, city: 'Málaga', team: 'Costa del Sol Runners', splitTimes: ['9:35', '9:40'], personalBest: '18:45', previousRaces: 20 },
-  { position: 3, name: 'Fernando Torres', bib: '078', category: 'Todo Competidor Varones', distance: '5K', time: '19:45', pace: '3:57', age: 38, categoryPosition: 3, city: 'Granada', team: 'Independiente', splitTimes: ['9:50', '9:55'], personalBest: '19:15', previousRaces: 7 },
-  { position: 4, name: 'Javier Ruiz', bib: '089', category: 'Todo Competidor Varones', distance: '5K', time: '20:12', pace: '4:02', age: 45, categoryPosition: 4, city: 'Murcia', team: 'Veteranos Murcia', splitTimes: ['10:05', '10:07'], personalBest: '19:50', previousRaces: 25 },
-  
-  // 5K - Senior A Damas
-  { position: 1, name: 'María González', bib: '102', category: 'Senior A Damas', distance: '5K', time: '18:45', pace: '3:45', age: 26, categoryPosition: 1, city: 'Madrid', team: 'Féminas Madrid', splitTimes: ['9:20', '9:25'], personalBest: '18:20', previousRaces: 9 },
-  { position: 2, name: 'Ana Fernández', bib: '115', category: 'Senior A Damas', distance: '5K', time: '19:20', pace: '3:52', age: 28, categoryPosition: 2, city: 'Barcelona', team: 'She Runs BCN', splitTimes: ['9:40', '9:40'], personalBest: '18:55', previousRaces: 11 },
-  { position: 3, name: 'Laura Sánchez', bib: '127', category: 'Senior A Damas', distance: '5K', time: '19:50', pace: '3:58', age: 27, categoryPosition: 3, city: 'Alicante', team: 'Independiente', splitTimes: ['9:55', '9:55'], personalBest: '19:25', previousRaces: 6 },
-  { position: 4, name: 'Carmen Ramírez', bib: '138', category: 'Senior A Damas', distance: '5K', time: '20:25', pace: '4:05', age: 25, categoryPosition: 4, city: 'Córdoba', team: 'Running Córdoba', splitTimes: ['10:10', '10:15'], personalBest: '19:58', previousRaces: 8 },
-  
-  // 10K - Senior A Varones
-  { position: 1, name: 'Diego Morales', bib: '201', category: 'Senior A Varones', distance: '10K', time: '34:12', pace: '3:25', age: 28, categoryPosition: 1, city: 'Madrid', team: 'Elite Runners', splitTimes: ['17:00', '17:12'], personalBest: '33:45', previousRaces: 18 },
-  { position: 2, name: 'Sergio Jiménez', bib: '215', category: 'Senior A Varones', distance: '10K', time: '35:30', pace: '3:33', age: 29, categoryPosition: 2, city: 'Barcelona', team: 'Pro Running BCN', splitTimes: ['17:40', '17:50'], personalBest: '34:55', previousRaces: 14 },
-  { position: 3, name: 'Ricardo Vega', bib: '228', category: 'Senior A Varones', distance: '10K', time: '36:15', pace: '3:38', age: 27, categoryPosition: 3, city: 'Valencia', team: 'Valencia Elite', splitTimes: ['18:05', '18:10'], personalBest: '35:40', previousRaces: 10 },
-  { position: 4, name: 'Andrés Castro', bib: '242', category: 'Senior A Varones', distance: '10K', time: '37:05', pace: '3:42', age: 26, categoryPosition: 4, city: 'Sevilla', team: 'Independiente', splitTimes: ['18:30', '18:35'], personalBest: '36:20', previousRaces: 7 },
-  
-  // 10K - Todo Competidor Varones
-  { position: 1, name: 'Francisco Herrera', bib: '305', category: 'Todo Competidor Varones', distance: '10K', time: '38:45', pace: '3:52', age: 36, categoryPosition: 1, city: 'Salamanca', team: 'Salamanca Corre', splitTimes: ['19:20', '19:25'], personalBest: '37:55', previousRaces: 16 },
-  { position: 2, name: 'Gabriel Ortiz', bib: '318', category: 'Todo Competidor Varones', distance: '10K', time: '40:20', pace: '4:02', age: 40, categoryPosition: 2, city: 'Toledo', team: 'Independiente', splitTimes: ['20:10', '20:10'], personalBest: '39:30', previousRaces: 22 },
-  { position: 3, name: 'Manuel Reyes', bib: '329', category: 'Todo Competidor Varones', distance: '10K', time: '41:30', pace: '4:09', age: 43, categoryPosition: 3, city: 'Cádiz', team: 'Costa Runners', splitTimes: ['20:45', '20:45'], personalBest: '40:50', previousRaces: 19 },
-  
-  // 10K - Senior A Damas
-  { position: 1, name: 'Patricia Flores', bib: '402', category: 'Senior A Damas', distance: '10K', time: '39:15', pace: '3:55', age: 27, categoryPosition: 1, city: 'Madrid', team: 'Women Run Madrid', splitTimes: ['19:35', '19:40'], personalBest: '38:45', previousRaces: 13 },
-  { position: 2, name: 'Isabel Navarro', bib: '415', category: 'Senior A Damas', distance: '10K', time: '40:50', pace: '4:05', age: 28, categoryPosition: 2, city: 'Girona', team: 'Girona Running', splitTimes: ['20:25', '20:25'], personalBest: '40:10', previousRaces: 11 },
-  { position: 3, name: 'Claudia Mendoza', bib: '428', category: 'Senior A Damas', distance: '10K', time: '42:10', pace: '4:13', age: 26, categoryPosition: 3, city: 'Tarragona', team: 'Independiente', splitTimes: ['21:05', '21:05'], personalBest: '41:30', previousRaces: 8 },
-];
 
-export function MarathonResults() {
+
+interface MarathonResultsProps {
+  eventSlug: string;
+}
+
+export function MarathonResults({ eventSlug }: MarathonResultsProps) {
   const [selectedDistance, setSelectedDistance] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
+  const [selectedParticipant, setSelectedParticipant] = useState<ProcessedParticipant | null>(null);
+  const [participants, setParticipants] = useState<ProcessedParticipant[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Simulating many distances - you can expand this list
-  const distances = ['5K', '10K', '15K', '21K', '42K', '50K', '100K', '5 Millas', '10 Millas'];
-  const categories = ['Senior A Varones', 'Todo Competidor Varones', 'Senior A Damas'];
+  // Función para procesar los datos del backend
+  const processParticipants = (rawParticipants: Participant[]): ProcessedParticipant[] => {
+    return rawParticipants.map((participant, index) => {
+      const data = participant.data;
+      
+      return {
+        position: parseInt(data.POSICION || data.position || (index + 1).toString()),
+        name: data.NOMBRE || data.name || data.nombre || 'N/A',
+        bib: data.DORSAL || data.bib || data.dorsal || 'N/A',
+        category: data.CATEGORIA || data.category || data.categoria || 'N/A',
+        distance: data.MODALIDAD || data.distance || data.distancia || 'N/A',
+        time: data.TIEMPO || data.time || data.tiempo || 'N/A',
+        pace: data.RITMO || data.pace || data.ritmo || 'N/A',
+        age: parseInt(data.EDAD || data.age || data.edad || '0'),
+        categoryPosition: parseInt(data['POS.CAT.'] || data.categoryPosition || data.posicionCategoria || '0'),
+        city: data.CIUDAD || data.city || data.ciudad,
+        team: data.EQUIPO || data.team || data.equipo,
+        chip: data.CHIP || data.chip,
+        sex: data.SEXO || data.sex || data.sexo,
+        splitTimes: data.splitTimes ? data.splitTimes.split(',') : undefined,
+        personalBest: data.personalBest || data.mejorTiempo,
+        previousRaces: data.previousRaces ? parseInt(data.previousRaces) : undefined
+      };
+    });
+  };
 
-  const filteredParticipants = mockParticipants.filter(participant => {
+  // useEffect para cargar los participantes
+  useEffect(() => {
+    const loadParticipants = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await getParticipantsBySlug(eventSlug, {}, 1, 1000);
+        const processedData = processParticipants(response.participants);
+        setParticipants(processedData);
+      } catch (err) {
+        console.error('Error loading participants:', err);
+        setError(err instanceof Error ? err.message : 'Error desconocido al cargar participantes');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (eventSlug) {
+      loadParticipants();
+    }
+  }, [eventSlug]);
+
+  // Obtener distancias y categorías únicas de los datos
+  const distances = Array.from(new Set(participants.map(p => p.distance).filter(d => d !== 'N/A')));
+  const categories = Array.from(new Set(participants.map(p => p.category).filter(c => c !== 'N/A')));
+
+  const filteredParticipants = participants.filter(participant => {
     const distanceMatch = selectedDistance === 'all' || participant.distance === selectedDistance;
     const categoryMatch = selectedCategory === 'all' || participant.category === selectedCategory;
     return distanceMatch && categoryMatch;
@@ -83,8 +109,8 @@ export function MarathonResults() {
   };
 
   // Get surrounding participants for comparison
-  const getSurroundingParticipants = (participant: Participant) => {
-    const sameDistance = mockParticipants.filter(p => p.distance === participant.distance);
+  const getSurroundingParticipants = (participant: ProcessedParticipant) => {
+    const sameDistance = participants.filter(p => p.distance === participant.distance);
     const firstPlace = sameDistance[0];
     
     // Get 5 participants before the selected one
@@ -94,6 +120,35 @@ export function MarathonResults() {
     
     return { firstPlace, previousParticipants };
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando resultados...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="text-red-600 text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Error al cargar resultados</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Intentar nuevamente
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -179,11 +234,12 @@ export function MarathonResults() {
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-6 py-4 text-left text-gray-700">Pos.</th>
+                  <th className="px-6 py-4 text-left text-gray-700">Pos. Cat.</th>
                   <th className="px-6 py-4 text-left text-gray-700">Dorsal</th>
                   <th className="px-6 py-4 text-left text-gray-700">Nombre</th>
                   <th className="px-6 py-4 text-left text-gray-700">Categoría</th>
                   <th className="px-6 py-4 text-left text-gray-700">Distancia</th>
-                  <th className="px-6 py-4 text-left text-gray-700">Edad</th>
+                  <th className="px-6 py-4 text-left text-gray-700">Sexo</th>
                   <th className="px-6 py-4 text-left text-gray-700">Tiempo</th>
                   <th className="px-6 py-4 text-left text-gray-700">Ritmo</th>
                 </tr>
@@ -203,6 +259,9 @@ export function MarathonResults() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
+                        <span className="text-gray-700">{participant.categoryPosition}</span>
+                      </td>
+                      <td className="px-6 py-4">
                         <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm">
                           {participant.bib}
                         </span>
@@ -214,14 +273,14 @@ export function MarathonResults() {
                           {participant.distance}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-gray-600">{participant.age}</td>
+                      <td className="px-6 py-4 text-gray-600">{participant.sex || 'N/A'}</td>
                       <td className="px-6 py-4 text-gray-900">{participant.time}</td>
                       <td className="px-6 py-4 text-gray-600">{participant.pace} min/km</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
                       No se encontraron resultados con los filtros seleccionados
                     </td>
                   </tr>

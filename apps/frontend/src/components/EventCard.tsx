@@ -18,6 +18,7 @@ interface EventCardProps {
   image?: string;
   sport?: string;
   participants?: number;
+  modalities?: string[];
   isFavorite?: boolean;
   onFavoriteToggle?: () => void;
   onClick?: () => void;
@@ -34,6 +35,7 @@ export const EventCard: React.FC<EventCardProps> = ({
   image,
   sport,
   participants,
+  modalities,
   isFavorite = false,
   onFavoriteToggle,
   onClick,
@@ -57,7 +59,7 @@ export const EventCard: React.FC<EventCardProps> = ({
           <div className="w-full h-full flex items-center justify-center text-slate-400">
             <div className="text-center">
               <div className="text-2xl mb-2">🏃‍♂️</div>
-              <p className="text-sm">Imagen no disponible</p>
+              <p className="text-sm">Sin imagen</p>
             </div>
           </div>
         )}
@@ -118,9 +120,37 @@ export const EventCard: React.FC<EventCardProps> = ({
         )}
 
         {/* Participantes */}
-        {participants !== undefined && (
+        {participants !== undefined && participants > 0 && (
           <div className="text-sm text-slate-600">
             👥 {participants} participantes
+          </div>
+        )}
+
+        {/* Modalidades */}
+        {modalities && modalities.length > 0 && (
+          <div className="space-y-2">
+            <div className="text-sm font-medium text-slate-700">
+              🏃‍♂️ Modalidades
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {modalities.slice(0, 8).map((modality, index) => (
+                <Badge
+                  key={index}
+                  variant="outline"
+                  className="text-xs bg-slate-50 text-slate-700 border-slate-200"
+                >
+                  {modality}
+                </Badge>
+              ))}
+              {modalities.length > 8 && (
+                <Badge
+                  variant="outline"
+                  className="text-xs bg-slate-100 text-slate-500 border-slate-300"
+                >
+                  +{modalities.length - 8} más
+                </Badge>
+              )}
+            </div>
           </div>
         )}
 

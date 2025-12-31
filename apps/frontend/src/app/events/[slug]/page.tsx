@@ -78,10 +78,5 @@ export default function ParticipantsPage() {
 
   const totalPages = Math.ceil(totalCount / limit);
 
-  return (
-    
-          <MarathonResults
-          />
-        
-  );
+  return <MarathonResults eventSlug={eventId}/>
 }

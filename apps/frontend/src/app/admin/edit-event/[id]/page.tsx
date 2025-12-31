@@ -181,17 +181,17 @@ export default function EditEventPage() {
   // Authentication UI
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center px-4">
         <div className="w-full max-w-md">
-          <div className="bg-slate-800 rounded-lg shadow-xl p-8 border border-slate-700">
-            <h1 className="text-3xl font-bold text-white mb-2">Editar Evento</h1>
-            <p className="text-slate-400 mb-8">
+          <div className="bg-white rounded-lg shadow-xl p-8 border border-gray-200">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Editar Evento</h1>
+            <p className="text-gray-600 mb-8">
               Ingresa tu contraseña de administrador para continuar
             </p>
 
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-white mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-900 mb-2">
                   Contraseña
                 </label>
                 <input
@@ -199,7 +199,7 @@ export default function EditEventPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-2 rounded-lg bg-slate-700 text-white border border-slate-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-2 rounded-lg bg-gray-50 text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
                   placeholder="Ingresa tu contraseña"
                   disabled={isAuthLoading}
                   autoFocus
@@ -207,13 +207,13 @@ export default function EditEventPage() {
               </div>
 
               {authError && (
-                <p className="text-red-400 text-sm">{authError}</p>
+                <p className="text-red-500 text-sm">{authError}</p>
               )}
 
               <button
                 type="submit"
                 disabled={isAuthLoading || !password}
-                className="w-full px-6 py-2.5 rounded-lg bg-emerald-500 text-white font-bold hover:bg-emerald-600 disabled:bg-slate-700 disabled:cursor-not-allowed transition"
+                className="w-full px-6 py-2.5 rounded-lg bg-red-600 text-white font-bold hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
               >
                 {isAuthLoading ? "Verificando..." : "Continuar"}
               </button>
@@ -227,51 +227,69 @@ export default function EditEventPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <LoadingOverlay />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-8 flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="px-4 py-2 rounded-lg bg-slate-700 text-white hover:bg-slate-600 transition"
-          >
-            ← Volver
-          </button>
-          
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-2">Editar Evento</h1>
-            <p className="text-slate-400">
-              {originalEvent && `Creado el ${formatDateForDisplay(originalEvent.createdAt)}`}
-            </p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Top Header with Logo and Navigation */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center">
+                <span className="text-white font-bold text-sm">QT</span>
+              </div>
+              <div>
+                <h1 className="text-gray-900 text-xl">
+                  QuintaTimer Admin
+                </h1>
+                <p className="text-gray-600 text-sm">
+                  Editar evento
+                </p>
+              </div>
+            </div>
+            <button 
+              onClick={() => router.back()}
+              className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+            >
+              ← Volver
+            </button>
           </div>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Editar Evento</h2>
+          <p className="text-gray-600">
+            {originalEvent && `Creado el ${formatDateForDisplay(originalEvent.createdAt)}`}
+          </p>
         </div>
 
         {/* Status Messages */}
         {error && (
-          <div className="mb-6 bg-red-900/20 border border-red-500/30 rounded-lg p-4">
-            <p className="text-red-400">{error}</p>
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-600">{error}</p>
           </div>
         )}
 
         {success && (
-          <div className="mb-6 bg-green-900/20 border border-green-500/30 rounded-lg p-4">
-            <p className="text-green-400">{success}</p>
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+            <p className="text-green-600">{success}</p>
           </div>
         )}
 
         {/* Edit Form */}
-        <div className="bg-slate-800 rounded-lg shadow-xl p-8 border border-slate-700">
+        <div className="bg-white rounded-lg shadow-lg p-8 border border-gray-200">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Event Name */}
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-white mb-2">
+              <label htmlFor="name" className="block text-sm font-medium text-gray-900 mb-2">
                 Nombre del Evento *
               </label>
               <input
@@ -280,7 +298,7 @@ export default function EditEventPage() {
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 rounded-lg bg-slate-700 text-white border border-slate-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-4 py-2 rounded-lg bg-gray-50 text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
                 placeholder="Ingrese el nombre del evento"
                 disabled={isSubmitting}
                 required
@@ -290,7 +308,7 @@ export default function EditEventPage() {
             {/* Date and Time */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="date" className="block text-sm font-medium text-white mb-2">
+                <label htmlFor="date" className="block text-sm font-medium text-gray-900 mb-2">
                   Fecha del Evento
                 </label>
                 <input
@@ -299,13 +317,13 @@ export default function EditEventPage() {
                   name="date"
                   value={formData.date}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 rounded-lg bg-slate-700 text-white border border-slate-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-2 rounded-lg bg-gray-50 text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
                   disabled={isSubmitting}
                 />
               </div>
 
               <div>
-                <label htmlFor="time" className="block text-sm font-medium text-white mb-2">
+                <label htmlFor="time" className="block text-sm font-medium text-gray-900 mb-2">
                   Hora del Evento
                 </label>
                 <input
@@ -314,7 +332,7 @@ export default function EditEventPage() {
                   name="time"
                   value={formData.time}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 rounded-lg bg-slate-700 text-white border border-slate-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-2 rounded-lg bg-gray-50 text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
                   disabled={isSubmitting}
                 />
               </div>
@@ -322,7 +340,7 @@ export default function EditEventPage() {
 
             {/* Address */}
             <div>
-              <label htmlFor="address" className="block text-sm font-medium text-white mb-2">
+              <label htmlFor="address" className="block text-sm font-medium text-gray-900 mb-2">
                 Dirección
               </label>
               <input
@@ -331,7 +349,7 @@ export default function EditEventPage() {
                 name="address"
                 value={formData.address}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 rounded-lg bg-slate-700 text-white border border-slate-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-4 py-2 rounded-lg bg-gray-50 text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
                 placeholder="Ingrese la dirección del evento"
                 disabled={isSubmitting}
               />
@@ -339,7 +357,7 @@ export default function EditEventPage() {
 
             {/* Image Upload */}
             <div>
-              <label className="block text-sm font-medium text-white mb-2">
+              <label className="block text-sm font-medium text-gray-900 mb-2">
                 Imagen del Evento
               </label>
               <ImageUpload 
@@ -350,7 +368,7 @@ export default function EditEventPage() {
             {/* File Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="fileName" className="block text-sm font-medium text-white mb-2">
+                <label htmlFor="fileName" className="block text-sm font-medium text-gray-900 mb-2">
                   Nombre del Archivo
                 </label>
                 <input
@@ -359,14 +377,14 @@ export default function EditEventPage() {
                   name="fileName"
                   value={formData.fileName}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 rounded-lg bg-slate-700 text-white border border-slate-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-2 rounded-lg bg-gray-50 text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
                   placeholder="nombre-archivo.ext"
                   disabled={isSubmitting}
                 />
               </div>
 
               <div>
-                <label htmlFor="fileExtension" className="block text-sm font-medium text-white mb-2">
+                <label htmlFor="fileExtension" className="block text-sm font-medium text-gray-900 mb-2">
                   Extensión del Archivo
                 </label>
                 <input
@@ -375,7 +393,7 @@ export default function EditEventPage() {
                   name="fileExtension"
                   value={formData.fileExtension}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 rounded-lg bg-slate-700 text-white border border-slate-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-2 rounded-lg bg-gray-50 text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
                   placeholder=".racecheck"
                   disabled={isSubmitting}
                 />
@@ -384,21 +402,21 @@ export default function EditEventPage() {
 
             {/* File Status Info */}
             {originalEvent && (
-              <div className="bg-slate-700 rounded-lg p-4">
-                <h3 className="text-white font-medium mb-2">Información del Archivo</h3>
-                <div className="text-slate-300 text-sm space-y-1">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-gray-900 font-medium mb-2">Información del Archivo</h3>
+                <div className="text-gray-700 text-sm space-y-1">
                   <p>
                     <span className="font-medium">Estado: </span>
                     {originalEvent.fileHash ? (
-                      <span className="text-green-400">✓ Archivo cargado con datos</span>
+                      <span className="text-green-600">✓ Archivo cargado con datos</span>
                     ) : (
-                      <span className="text-yellow-400">⚠ Sin archivo de datos</span>
+                      <span className="text-yellow-600">⚠ Sin archivo de datos</span>
                     )}
                   </p>
                   <p>
                     <span className="font-medium">Estado del evento: </span>
-                    <span className={originalEvent.status === 'PUBLISHED' ? 'text-green-400' : 
-                                   originalEvent.status === 'HIDDEN' ? 'text-yellow-400' : 'text-gray-400'}>
+                    <span className={originalEvent.status === 'PUBLISHED' ? 'text-green-600' : 
+                                   originalEvent.status === 'HIDDEN' ? 'text-yellow-600' : 'text-gray-600'}>
                       {originalEvent.status === 'PUBLISHED' ? 'Publicado' : 
                        originalEvent.status === 'HIDDEN' ? 'Oculto' : 'Borrador'}
                     </span>
@@ -413,14 +431,14 @@ export default function EditEventPage() {
                 type="button"
                 onClick={() => router.push("/admin/dashboard")}
                 disabled={isSubmitting}
-                className="px-6 py-2.5 rounded-lg bg-slate-600 text-white font-bold hover:bg-slate-700 disabled:opacity-50 transition"
+                className="px-6 py-2.5 rounded-lg bg-gray-200 text-gray-700 font-bold hover:bg-gray-300 disabled:opacity-50 transition"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting || !formData.name.trim()}
-                className="px-6 py-2.5 rounded-lg bg-emerald-500 text-white font-bold hover:bg-emerald-600 disabled:bg-slate-600 disabled:cursor-not-allowed transition"
+                className="px-6 py-2.5 rounded-lg bg-red-600 text-white font-bold hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
               >
                 {isSubmitting ? "Actualizando..." : "Actualizar Evento"}
               </button>
