@@ -12,13 +12,35 @@ import (
 )
 
 type EventHandler struct {
-	eventService ports.EventService
+	eventService      ports.EventService
+	cloudinaryService *services.CloudinaryService
 }
 
-func NewEventHandler(eventService ports.EventService) *EventHandler {
+func NewEventHandler(eventService ports.EventService, cloudinaryService *services.CloudinaryService) *EventHandler {
 	return &EventHandler{
-		eventService: eventService,
+		eventService:      eventService,
+		cloudinaryService: cloudinaryService,
 	}
+}
+
+func (h *EventHandler) CreateEvent(c *gin.Context) {
+	var req ports.CreateEventRequest
+
+	// Parse JSON body
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+
+	// Call service
+	event, err := h.eventService.CreateEvent(&req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Return success response
+	c.JSON(http.StatusOK, event)
 }
 
 func (h *EventHandler) Upload(c *gin.Context) {
@@ -107,6 +129,57 @@ func (h *EventHandler) GetEvents(c *gin.Context) {
 
 	// 3. Return response
 	c.JSON(http.StatusOK, result)
+}
+
+func (h *EventHandler) UploadImageToCloudinary(c *gin.Context) {
+	// Parse multipart form (max 50 MB for images)
+	if err := c.Request.ParseMultipartForm(50 << 20); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "could not parse multipart form"})
+		return
+	}
+
+	// Get file from form
+	fileHeader, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "file is required"})
+		return
+	}
+
+	// Validate file size (max 10 MB)
+	if fileHeader.Size > 10<<20 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "file size exceeds 10 MB limit"})
+		return
+	}
+
+	// Validate file type
+	allowedTypes := map[string]bool{
+		"image/jpeg": true,
+		"image/png":  true,
+		"image/webp": true,
+		"image/gif":  true,
+	}
+
+	contentType := fileHeader.Header.Get("Content-Type")
+	if !allowedTypes[contentType] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid file type. allowed: jpg, png, webp, gif"})
+		return
+	}
+
+	// Upload to Cloudinary
+	result, err := h.cloudinaryService.UploadImage(c.Request.Context(), fileHeader, "qtimer-events")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"url":      result.SecureURL,
+		"publicId": result.PublicID,
+		"width":    result.Width,
+		"height":   result.Height,
+		"size":     result.Bytes,
+		"format":   result.Format,
+	})
 }
 
 func (h *EventHandler) GetParticipants(c *gin.Context) {

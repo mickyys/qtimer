@@ -28,6 +28,51 @@ func NewEventService(eventRepository ports.EventRepository) ports.EventService {
 	}
 }
 
+func (s *eventService) CreateEvent(req *ports.CreateEventRequest) (*domain.Event, error) {
+	// Validate inputs
+	if req.Name == "" {
+		return nil, errors.New("event name cannot be empty")
+	}
+	if req.Date == "" {
+		return nil, errors.New("event date cannot be empty")
+	}
+	if req.Time == "" {
+		return nil, errors.New("event time cannot be empty")
+	}
+	if req.Address == "" {
+		return nil, errors.New("event address cannot be empty")
+	}
+	if req.ImageURL == "" {
+		return nil, errors.New("event image URL cannot be empty")
+	}
+
+	// Parse date (format: YYYY-MM-DD)
+	parsedDate, err := time.Parse("2006-01-02", req.Date)
+	if err != nil {
+		return nil, fmt.Errorf("invalid date format, expected YYYY-MM-DD: %w", err)
+	}
+
+	// Create event
+	event := &domain.Event{
+		ID:        primitive.NewObjectID(),
+		Name:      req.Name,
+		Date:      parsedDate,
+		Time:      req.Time,
+		Address:   req.Address,
+		ImageURL:  req.ImageURL,
+		Status:    "PUBLISHED",
+		CreatedAt: time.Now(),
+		FileHash:  "", // No file hash for manually created events
+	}
+
+	// Save to database
+	if err := s.eventRepository.Save(event); err != nil {
+		return nil, fmt.Errorf("could not save event: %w", err)
+	}
+
+	return event, nil
+}
+
 func (s *eventService) Upload(fileHeader *multipart.FileHeader, clientHash string) (*ports.UploadResult, error) {
 	// 1. Validate file extension
 	expectedExt := os.Getenv("RACECHECK_EXTENSION")

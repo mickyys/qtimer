@@ -107,3 +107,40 @@ export const uploadFile = async (file: File): Promise<UploadResult> => {
 
   return response.json();
 };
+
+interface CreateEventRequest {
+  name: string;
+  date: string;
+  time: string;
+  address: string;
+  imageUrl: string;
+}
+
+interface CreateEventResponse {
+  id: string;
+  name: string;
+  date: string;
+  time: string;
+  address: string;
+  imageUrl: string;
+  status: string;
+  createdAt: string;
+}
+
+export const createEvent = async (data: CreateEventRequest): Promise<CreateEventResponse> => {
+  const response = await fetch(`${API_URL}/events/create`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: "Error de red o respuesta inválida" }));
+    throw new Error(errorData.error || `Error HTTP! estado: ${response.status}`);
+  }
+
+  return response.json();
+};
+

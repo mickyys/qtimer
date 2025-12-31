@@ -66,38 +66,53 @@ export default function UploadPage() {
 
   const renderAuthenticatedContent = () => (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-white mb-4">Subir Archivo de Resultados</h2>
-        <p className="text-slate-400">
-          Selecciona un archivo .racecheck para procesar los resultados de un nuevo evento.
-        </p>
-      </div>
-      <div className="flex items-center space-x-4">
-        <input
-          type="file"
-          onChange={handleFileChange}
-          accept=".racecheck"
-          className="block w-full text-sm text-slate-400
-            file:mr-4 file:py-2 file:px-4
-            file:rounded-lg file:border-0
-            file:text-sm file:font-semibold
-            file:bg-emerald-500 file:text-white
-            hover:file:bg-emerald-600 transition"
-        />
-        <button
-          onClick={handleFileUpload}
-          disabled={!file || isLoading}
-          className="px-6 py-2.5 rounded-lg bg-emerald-500 text-white font-bold
-             hover:bg-emerald-600 disabled:bg-slate-700 disabled:cursor-not-allowed transition"
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-white mb-4">Panel de Administración</h2>
+          <p className="text-slate-400">
+            Selecciona una opción para administrar los eventos
+          </p>
+        </div>
+        <a
+          href="/admin/create-event"
+          className="px-6 py-2.5 rounded-lg bg-cyan-500 text-white font-bold hover:bg-cyan-600 transition whitespace-nowrap"
         >
-          {isLoading ? 'Subiendo...' : 'Subir'}
-        </button>
+          + Crear Evento Manual
+        </a>
       </div>
-      {feedback.message && (
-        <p className={`mt-4 text-sm ${feedback.isError ? "text-red-400" : "text-green-400"}`}>
-          {feedback.message}
+
+      <div className="mt-8">
+        <h3 className="text-xl font-bold text-white mb-4">Subir Archivo de Resultados</h3>
+        <p className="text-slate-400 mb-4">
+          Selecciona un archivo .racecheck para procesar los resultados de un evento.
         </p>
-      )}
+        <div className="flex items-center space-x-4">
+          <input
+            type="file"
+            onChange={handleFileChange}
+            accept=".racecheck"
+            className="block w-full text-sm text-slate-400
+              file:mr-4 file:py-2 file:px-4
+              file:rounded-lg file:border-0
+              file:text-sm file:font-semibold
+              file:bg-emerald-500 file:text-white
+              hover:file:bg-emerald-600 transition"
+          />
+          <button
+            onClick={handleFileUpload}
+            disabled={!file || isLoading}
+            className="px-6 py-2.5 rounded-lg bg-emerald-500 text-white font-bold
+               hover:bg-emerald-600 disabled:bg-slate-700 disabled:cursor-not-allowed transition"
+          >
+            {isLoading ? 'Subiendo...' : 'Subir'}
+          </button>
+        </div>
+        {feedback.message && (
+          <p className={`mt-4 text-sm ${feedback.isError ? "text-red-400" : "text-green-400"}`}>
+            {feedback.message}
+          </p>
+        )}
+      </div>
     </div>
   );
 

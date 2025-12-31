@@ -29,7 +29,12 @@ func main() {
 
 	eventService := services.NewEventService(eventRepository)
 
-	eventHandler := handlers.NewEventHandler(eventService)
+	cloudinaryService, err := services.NewCloudinaryService()
+	if err != nil {
+		log.Println("Warning: Cloudinary not configured. Image uploads will be disabled.")
+	}
+
+	eventHandler := handlers.NewEventHandler(eventService, cloudinaryService)
 
 	r := gin.Default()
 
@@ -56,7 +61,9 @@ func main() {
 	{
 		events := api.Group("/events")
 		{
+			events.POST("/create", eventHandler.CreateEvent)
 			events.POST("/upload", eventHandler.Upload)
+			events.POST("/upload-image", eventHandler.UploadImageToCloudinary)
 			events.GET("", eventHandler.GetEvents)
 			events.GET("/:id/participants", eventHandler.GetParticipants)
 		}
