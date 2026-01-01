@@ -225,7 +225,8 @@ export default function App() {
                 date={event.date}
                 time={event.time}
                 location={event.location}
-                image={event.imageUrl}
+                imageUrl={event.imageUrl}
+                status={event.status || 'Próximo'}
                 participants={event.participants}
                 distances={event.modalities}
                 onViewResults={() =>
