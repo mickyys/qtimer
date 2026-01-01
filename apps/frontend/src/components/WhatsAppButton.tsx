@@ -1,4 +1,3 @@
-import React from 'react';
 
 const WhatsAppButton: React.FC = () => {
     const phoneNumber = '56956172353';

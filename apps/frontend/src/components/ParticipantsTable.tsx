@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import { useState, useMemo, ReactNode, Fragment, FC } from 'react';
 import {
   Table,
   TableBody,
@@ -52,17 +52,17 @@ const getPositionBadgeVariant = (position: string): 'default' | 'secondary' | 'd
   return 'outline';
 };
 
-export const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
+export const ParticipantsTable: FC<ParticipantsTableProps> = ({
   participants,
   loading = false,
   onSelectParticipant,
   isLoading = false,
 }) => {
-  const [expandedId, setExpandedId] = React.useState<string | null>(null);
-  const [visibleColumns, setVisibleColumns] = React.useState<string[]>(DEFAULT_COLUMNS);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(DEFAULT_COLUMNS);
 
   // Obtener todas las columnas únicas disponibles
-  const allColumns = React.useMemo(() => {
+  const allColumns = useMemo(() => {
     const columns = new Set<string>();
     participants.forEach((p) => {
       Object.keys(p.data).forEach((col) => columns.add(col));
@@ -88,7 +88,7 @@ export const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
     );
   }
 
-  const getDisplayValue = (value: string, key: string): React.ReactNode => {
+  const getDisplayValue = (value: string, key: string): ReactNode => {
     if (key === 'category') {
       return (
         <Badge className={getCategoryColor(value)}>
@@ -174,7 +174,7 @@ export const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
           </TableHeader>
           <TableBody>
             {participants.map((participant, index) => (
-              <React.Fragment key={participant.id}>
+              <Fragment key={participant.id}>
                 <TableRow
                   className="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
                   onClick={() => setExpandedId(expandedId === participant.id ? null : participant.id)}
@@ -256,7 +256,7 @@ export const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
                     </TableCell>
                   </TableRow>
                 )}
-              </React.Fragment>
+              </Fragment>
             ))}
           </TableBody>
         </Table>
