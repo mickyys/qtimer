@@ -170,7 +170,7 @@ export default function ParticipantDetailModal({
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className="bg-gray-200 text-gray-700 rounded-full w-8 h-8 flex items-center justify-center text-sm font-semibold">
-                              {p.position}
+                              {p.categoryPosition}
                             </div>
                             <div>
                               <p className="text-gray-900 text-sm font-semibold">{p.name}</p>
