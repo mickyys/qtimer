@@ -50,11 +50,17 @@ export default function ParticipantDetailModal({
     const baseUrl = window.location.href.split('?')[0]; // Remover query params anteriores
     const shareUrl = `${baseUrl}?participantId=${encodeURIComponent(participant.name)}&position=${participant.position}&bib=${participant.bib}`;
     
-    // Copiar URL al portapapeles y mostrar instrucción
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      alert(`URL copiada al portapapeles. Puedes compartirla en Instagram Bio o Direct Messages.\n\n${shareUrl}`);
+    const text = encodeURIComponent(`¡Mira mis resultados en QuintaTimer! 🏃\n\n${participant.name}\nPosición: ${participant.position}°\nTiempo: ${participant.time}\nRitmo: ${participant.pace}\n\n${shareUrl}`);
+    
+    // Intentar abrir Instagram con el intent de compartir
+    const instagramShareUrl = `https://instagram.com/`;
+    window.open(instagramShareUrl, "_blank");
+    
+    // Copiar también al portapapeles como alternativa
+    navigator.clipboard.writeText(text).then(() => {
+      console.log('Texto copiado al portapapeles para pegar en Instagram');
     }).catch(() => {
-      alert(`Copia este link para compartir en Instagram:\n${shareUrl}`);
+      console.log('No se pudo copiar al portapapeles');
     });
   };
 
