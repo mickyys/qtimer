@@ -100,9 +100,9 @@ export function MarathonResults({ eventSlug, event }: MarathonResultsProps) {
 
 
 
-  // Obtener distancias y categorías únicas de los datos
-  const distances = Array.from(new Set(participants.map(p => p.distance).filter(d => d !== 'N/A')));
-  const categories = Array.from(new Set(participants.map(p => p.category).filter(c => c !== 'N/A')));
+  // Obtener distancias y categorías únicas de los datos, ordenadas alfabéticamente
+  const distances = Array.from(new Set(participants.map(p => p.distance).filter(d => d !== 'N/A'))).sort();
+  const categories = Array.from(new Set(participants.map(p => p.category).filter(c => c !== 'N/A'))).sort();
 
   // Función para cargar participantes con filtros
   const loadParticipantsWithFilters = useCallback(async () => {
