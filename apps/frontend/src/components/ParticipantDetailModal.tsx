@@ -57,7 +57,7 @@ export default function ParticipantDetailModal({
     const baseUrl = window.location.href.split('?')[0]; // Remover query params anteriores
     const shareUrl = `${baseUrl}?participantId=${encodeURIComponent(participant.name)}&position=${participant.position}&bib=${participant.bib}`;
     
-    const text = encodeURIComponent(`¡Mira mis resultados en QuintaTimer! 🏃\n\n*${participant.name}*\nPosición: ${participant.position}°\nTiempo: ${participant.time}\nRitmo: ${participant.pace}\n\nVer resultados: ${shareUrl}`);
+    const text = encodeURIComponent(`¡Mira mis resultados en QuintaTimer! 🏃\n\n*${participant.name}*\nPosición: ${participant.position}°\nPosición Categoría: ${participant.categoryPosition}°\nTiempo: ${participant.time}\nRitmo: ${participant.pace}\n\nVer resultados: ${shareUrl}`);
     window.open(`https://wa.me/?text=${text}`, "_blank");
   };
 
