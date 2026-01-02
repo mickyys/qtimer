@@ -26,10 +26,8 @@ func main() {
 	}
 
 	eventRepository := repositories.NewMongoEventRepository(mongoClient)
-	raceRepository := repositories.NewMongoRaceRepository(mongoClient)
-	categoryRepository := repositories.NewMongoCategoryRepository(mongoClient)
 
-	eventService := services.NewEventService(eventRepository, raceRepository, categoryRepository)
+	eventService := services.NewEventService(eventRepository)
 
 	cloudinaryService, err := services.NewCloudinaryService()
 	if err != nil {
@@ -73,7 +71,6 @@ func main() {
 			events.DELETE("/:id", eventHandler.DeleteEvent)
 			events.PATCH("/:id/status", eventHandler.UpdateEventStatus)
 			events.GET("/:id/participants", eventHandler.GetParticipants)
-			events.GET("/:id/races", eventHandler.GetRaces)
 		}
 	}
 

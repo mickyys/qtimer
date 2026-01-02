@@ -361,21 +361,6 @@ func (h *EventHandler) UpdateEventStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, event)
 }
 
-func (h *EventHandler) GetRaces(c *gin.Context) {
-	eventID := c.Param("id")
-
-	races, err := h.eventService.GetRaces(eventID)
-	if err != nil {
-		if errors.Is(err, services.ErrInvalidObjectID) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid event id"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		}
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"races": races})
-}
 func (h *EventHandler) UploadToEvent(c *gin.Context) {
 	// 1. Parse multipart form
 	if err := c.Request.ParseMultipartForm(10 << 20); err != nil { // 10 MB
