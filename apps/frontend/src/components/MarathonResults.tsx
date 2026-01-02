@@ -338,6 +338,12 @@ export function MarathonResults({ eventSlug, event }: MarathonResultsProps) {
     }
   };
 
+  const handleCloseModal = () => {
+    setSelectedParticipant(null);
+    // Limpiar los parámetros de la URL
+    window.history.replaceState({}, '', window.location.pathname);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
@@ -630,7 +636,7 @@ export function MarathonResults({ eventSlug, event }: MarathonResultsProps) {
       {selectedParticipant && (
         <ParticipantDetailModal
           participant={selectedParticipant}
-          onClose={() => setSelectedParticipant(null)}
+          onClose={handleCloseModal}
           firstPlace={firstPlace}
           previousParticipants={previousParticipants}
         />
