@@ -246,6 +246,23 @@ export const deleteEvent = async (eventId: string): Promise<void> => {
   }
 };
 
+export const updateEventImage = async (eventId: string, imageUrl: string): Promise<CreateEventResponse> => {
+  const response = await fetch(`${API_URL}/events/${eventId}/image`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ imageUrl }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: "Error de red o respuesta inválida" }));
+    throw new Error(errorData.error || `Error HTTP! estado: ${response.status}`);
+  }
+
+  return response.json();
+};
+
 export const updateEventStatus = async (eventId: string, status: string): Promise<CreateEventResponse> => {
   const response = await fetch(`${API_URL}/events/${eventId}/status`, {
     method: "PATCH",

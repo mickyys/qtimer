@@ -186,6 +186,45 @@ func (h *EventHandler) UploadImageToCloudinary(c *gin.Context) {
 	})
 }
 
+func (h *EventHandler) UpdateEventImage(c *gin.Context) {
+	// 1. Get event ID from path parameter
+	eventID := c.Param("id")
+	if eventID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "event id is required"})
+		return
+	}
+
+	// 2. Parse request body
+	var req struct {
+		ImageURL string `json:"imageUrl"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+
+	if req.ImageURL == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "imageUrl is required"})
+		return
+	}
+
+	// 3. Call service to update only the image
+	event, err := h.eventService.UpdateEventImage(eventID, req.ImageURL)
+	if err != nil {
+		if err.Error() == "event not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "event not found"})
+		} else if err.Error() == "invalid event id" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid event id"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	// 4. Return updated event
+	c.JSON(http.StatusOK, event)
+}
+
 func (h *EventHandler) GetParticipants(c *gin.Context) {
 	// 1. Get path and query params
 	eventParam := c.Param("id") // This could be either ID or slug
