@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Filter, Trophy, Medal, Award, ChevronDown, X, MapPin, Calendar, Timer, TrendingUp, User } from 'lucide-react';
-import { getParticipantsBySlug } from '../services/api';
+import { getParticipantsBySlug, getParticipantComparison } from '../services/api';
+import ParticipantDetailModal from './ParticipantDetailModal';
 
 interface Participant {
   id: string;
@@ -41,17 +43,34 @@ const capitalizeString = (str: string): string => {
 
 interface MarathonResultsProps {
   eventSlug: string;
+  event?: {
+    id: string;
+    name: string;
+    date: string;
+    time: string;
+    address: string;
+    imageUrl: string;
+    fileName: string;
+    fileExtension: string;
+    status: string;
+    createdAt: string;
+  } | null;
 }
 
-export function MarathonResults({ eventSlug }: MarathonResultsProps) {
+export function MarathonResults({ eventSlug, event }: MarathonResultsProps) {
+  const searchParams = useSearchParams();
+  
   const [selectedDistance, setSelectedDistance] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchName, setSearchName] = useState<string>('');
   const [searchBib, setSearchBib] = useState<string>('');
   const [selectedParticipant, setSelectedParticipant] = useState<ProcessedParticipant | null>(null);
+  const [firstPlace, setFirstPlace] = useState<ProcessedParticipant | undefined>();
+  const [previousParticipants, setPreviousParticipants] = useState<ProcessedParticipant[]>([]);
   const [participants, setParticipants] = useState<ProcessedParticipant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadingComparison, setLoadingComparison] = useState(false);
 
   // Función para procesar los datos del backend
   const processParticipants = (rawParticipants: Participant[]): ProcessedParticipant[] => {
@@ -110,54 +129,132 @@ export function MarathonResults({ eventSlug }: MarathonResultsProps) {
   }, [eventSlug, selectedDistance, selectedCategory, searchName, searchBib]);
 
   // Ref para el timeout del debounce
-  const searchTimeoutRef = useRef<NodeJS.Timeout>();
-  const filterTimeoutRef = useRef<NodeJS.Timeout>();
+  const debounceTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Debounce para búsquedas de texto (500ms después de cada número/letra)
+  // Efecto combinado para debounce de todos los filtros
   useEffect(() => {
     // Cancelar timeout anterior
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    if (eventSlug && (searchName || searchBib)) {
-      // Mostrar loading mientras se espera
-      setLoading(true);
-      
-      // Esperar 500ms después de cada número/letra ingresado
-      searchTimeoutRef.current = setTimeout(() => {
-        loadParticipantsWithFilters();
-      }, 500);
-    }
-
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, [searchName, searchBib, eventSlug]);
-
-  // Debounce para cambios en filtros de selección (300ms)
-  useEffect(() => {
-    // Cancelar timeout anterior
-    if (filterTimeoutRef.current) {
-      clearTimeout(filterTimeoutRef.current);
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
     }
 
     if (eventSlug) {
-      setLoading(true);
+    
       
-      filterTimeoutRef.current = setTimeout(() => {
+      // Usar 500ms para búsquedas de texto, 300ms para filtros normales
+      const delay = (searchName || searchBib) ? 500 : 300;
+      
+      debounceTimeoutRef.current = setTimeout(() => {
+          setLoading(true);
         loadParticipantsWithFilters();
-      }, 300); // Esperar 300ms para permitir cambios rápidos de filtros
+      }, delay);
     }
 
     return () => {
-      if (filterTimeoutRef.current) {
-        clearTimeout(filterTimeoutRef.current);
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
       }
     };
-  }, [selectedDistance, selectedCategory, eventSlug]);
+  }, [searchName, searchBib, selectedDistance, selectedCategory, eventSlug, loadParticipantsWithFilters]);
+
+  // Efecto para leer query params y abrir el modal del participante
+  useEffect(() => {
+    const participantId = searchParams.get('participantId');
+    const position = searchParams.get('position');
+    
+    if (participantId && participants.length > 0 && !selectedParticipant) {
+      // Decodificar el nombre del participante desde la URL
+      const decodedName = decodeURIComponent(participantId);
+      
+      // Buscar el participante por nombre o posición
+      const foundParticipant = participants.find(
+        p => p.name.toLowerCase() === decodedName.toLowerCase() ||
+             (position && p.position === parseInt(position))
+      );
+      
+      if (foundParticipant) {
+        handleSelectParticipant(foundParticipant);
+        
+        // Actualizar metatags
+        updateMetaTags(foundParticipant);
+      }
+    }
+  }, [searchParams, participants, selectedParticipant]);
+
+  // Función para actualizar metatags dinámicamente
+  const updateMetaTags = (participant: ProcessedParticipant) => {
+    const eventName = event?.name || 'QuintaTimer';
+    const title = `${participant.name} - ${eventName} | Posición ${participant.position}°`;
+    const description = `${participant.name} finalizó en posición ${participant.position}° en ${eventName}. Tiempo: ${participant.time} | Ritmo: ${participant.pace} min/km | Categoría: ${participant.category}`;
+    const image = event?.imageUrl || `https://via.placeholder.com/1200x630?text=${encodeURIComponent(participant.name)}+%23${participant.position}`;
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+
+    // Actualizar og:title
+    let ogTitle = document.querySelector('meta[property="og:title"]');
+    if (!ogTitle) {
+      ogTitle = document.createElement('meta');
+      ogTitle.setAttribute('property', 'og:title');
+      document.head.appendChild(ogTitle);
+    }
+    ogTitle.setAttribute('content', title);
+
+    // Actualizar og:description
+    let ogDescription = document.querySelector('meta[property="og:description"]');
+    if (!ogDescription) {
+      ogDescription = document.createElement('meta');
+      ogDescription.setAttribute('property', 'og:description');
+      document.head.appendChild(ogDescription);
+    }
+    ogDescription.setAttribute('content', description);
+
+    // Actualizar og:image
+    let ogImage = document.querySelector('meta[property="og:image"]');
+    if (!ogImage) {
+      ogImage = document.createElement('meta');
+      ogImage.setAttribute('property', 'og:image');
+      document.head.appendChild(ogImage);
+    }
+    ogImage.setAttribute('content', image);
+
+    // Actualizar og:url
+    let ogUrl = document.querySelector('meta[property="og:url"]');
+    if (!ogUrl) {
+      ogUrl = document.createElement('meta');
+      ogUrl.setAttribute('property', 'og:url');
+      document.head.appendChild(ogUrl);
+    }
+    ogUrl.setAttribute('content', url);
+
+    // Actualizar twitter:title
+    let twitterTitle = document.querySelector('meta[name="twitter:title"]');
+    if (!twitterTitle) {
+      twitterTitle = document.createElement('meta');
+      twitterTitle.setAttribute('name', 'twitter:title');
+      document.head.appendChild(twitterTitle);
+    }
+    twitterTitle.setAttribute('content', title);
+
+    // Actualizar twitter:description
+    let twitterDescription = document.querySelector('meta[name="twitter:description"]');
+    if (!twitterDescription) {
+      twitterDescription = document.createElement('meta');
+      twitterDescription.setAttribute('name', 'twitter:description');
+      document.head.appendChild(twitterDescription);
+    }
+    twitterDescription.setAttribute('content', description);
+
+    // Actualizar twitter:image
+    let twitterImage = document.querySelector('meta[name="twitter:image"]');
+    if (!twitterImage) {
+      twitterImage = document.createElement('meta');
+      twitterImage.setAttribute('name', 'twitter:image');
+      document.head.appendChild(twitterImage);
+    }
+    twitterImage.setAttribute('content', image);
+
+    // Actualizar title de la página
+    document.title = title;
+  }
 
   // Los participantes mostrados ahora son todos los que vienen del servidor
   const filteredParticipants = participants;
@@ -187,6 +284,58 @@ export function MarathonResults({ eventSlug }: MarathonResultsProps) {
     const previousParticipants = sameDistance.slice(startIndex, participantIndex);
     
     return { firstPlace, previousParticipants };
+  };
+
+  // Obtener datos de comparación desde la base de datos
+  const handleSelectParticipant = async (participant: ProcessedParticipant) => {
+    setSelectedParticipant(participant);
+    setLoadingComparison(true);
+    
+    try {
+      const comparisonData = await getParticipantComparison(
+        eventSlug,
+        participant.bib,
+        participant.distance
+      );
+
+      // Procesar los datos recibidos del servidor
+      const processRawParticipant = (raw: Participant): ProcessedParticipant => {
+        const data = raw.data;
+        return {
+          position: parseInt(data.POSICION || data.position || '0'),
+          name: capitalizeString(data.NOMBRE || data.name || data.nombre || 'N/A'),
+          bib: data.DORSAL || data.bib || data.dorsal || 'N/A',
+          category: capitalizeString(data.CATEGORIA || data.category || data.categoria || 'N/A'),
+          distance: capitalizeString(data.MODALIDAD || data.distance || data.distancia || 'N/A'),
+          time: data.TIEMPO || data.time || data.tiempo || 'N/A',
+          pace: data.RITMO || data.pace || data.ritmo || 'N/A',
+          age: parseInt(data.EDAD || data.age || data.edad || '0'),
+          categoryPosition: parseInt(data['POS.CAT.'] || data.categoryPosition || data.posicionCategoria || '0'),
+          city: capitalizeString(data.CIUDAD || data.city || data.ciudad || ''),
+          team: capitalizeString(data.EQUIPO || data.team || data.equipo || ''),
+          chip: data.CHIP || data.chip,
+          sex: capitalizeString(data.SEXO || data.sex || data.sexo || ''),
+        };
+      };
+
+      if (comparisonData.firstPlace) {
+        setFirstPlace(processRawParticipant(comparisonData.firstPlace));
+      }
+
+      if (comparisonData.previousParticipants && comparisonData.previousParticipants.length > 0) {
+        setPreviousParticipants(comparisonData.previousParticipants.map(processRawParticipant));
+      } else {
+        setPreviousParticipants([]);
+      }
+    } catch (err) {
+      console.error('Error fetching comparison data:', err);
+      // Si falla, usar los datos locales
+      const { firstPlace: localFirst, previousParticipants: localPrev } = getSurroundingParticipants(participant);
+      setFirstPlace(localFirst);
+      setPreviousParticipants(localPrev);
+    } finally {
+      setLoadingComparison(false);
+    }
   };
 
   if (loading) {
@@ -435,7 +584,7 @@ export function MarathonResults({ eventSlug }: MarathonResultsProps) {
                   filteredParticipants.map((participant, index) => (
                     <tr 
                       key={index}
-                      onClick={() => setSelectedParticipant(participant)}
+                      onClick={() => handleSelectParticipant(participant)}
                       className="hover:bg-gray-50 transition-colors cursor-pointer"
                     >
                       <td className="px-6 py-4">
@@ -478,129 +627,14 @@ export function MarathonResults({ eventSlug }: MarathonResultsProps) {
       </div>
 
       {/* Participant Detail Modal */}
-      {selectedParticipant && (() => {
-        const { firstPlace, previousParticipants } = getSurroundingParticipants(selectedParticipant);
-        
-        return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setSelectedParticipant(null)}>
-          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            {/* Header with Close Button */}
-            <div className="relative bg-gradient-to-r from-red-600 to-red-700 p-6 rounded-t-xl">
-              <button
-                onClick={() => setSelectedParticipant(null)}
-                className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 p-2 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5 text-white" />
-              </button>
-              
-              <div className="text-white">
-                <h2 className="text-white mb-1">{selectedParticipant.name}</h2>
-                <p className="text-red-100 mb-4">{selectedParticipant.category}</p>
-                
-                {/* Key Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
-                    <p className="text-red-100 text-sm mb-1">Pos. General</p>
-                    <p className="text-white text-xl">{selectedParticipant.position}°</p>
-                  </div>
-                  <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
-                    <p className="text-red-100 text-sm mb-1">Pos. Categoría</p>
-                    <p className="text-white text-xl">{selectedParticipant.categoryPosition}°</p>
-                  </div>
-                  <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
-                    <p className="text-red-100 text-sm mb-1">Tiempo</p>
-                    <p className="text-white text-xl">{selectedParticipant.time}</p>
-                  </div>
-                  <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
-                    <p className="text-red-100 text-sm mb-1">Ritmo</p>
-                    <p className="text-white text-xl">{selectedParticipant.pace}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-6">
-              {/* Comparison Section */}
-              <div className="mb-6">
-                <h3 className="text-gray-900 mb-4 flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-red-600" />
-                  Comparación de Tiempos
-                </h3>
-                
-                <div className="space-y-2">
-                  {/* First Place */}
-                  {firstPlace && firstPlace.position !== selectedParticipant.position && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Trophy className="w-5 h-5 text-yellow-500" />
-                          <div>
-                            <p className="text-gray-900">{firstPlace.name}</p>
-                            <p className="text-gray-600 text-sm">1° Lugar - {firstPlace.category}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-gray-900">{firstPlace.time}</p>
-                          <p className="text-gray-600 text-sm">{firstPlace.pace} min/km</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Previous 5 Participants */}
-                  {previousParticipants.length > 0 && (
-                    <>
-                      <div className="pt-3">
-                        <p className="text-gray-600 text-sm mb-2">Corredores anteriores</p>
-                      </div>
-                      {previousParticipants.map((p, index) => (
-                        <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="bg-gray-200 text-gray-700 rounded-full w-8 h-8 flex items-center justify-center text-sm">
-                                {p.position}
-                              </div>
-                              <div>
-                                <p className="text-gray-900 text-sm">{p.name}</p>
-                                <p className="text-gray-600 text-xs">{p.category}</p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-gray-900 text-sm">{p.time}</p>
-                              <p className="text-gray-600 text-xs">{p.pace} min/km</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                  
-                  {/* Selected Participant */}
-                  <div className="bg-red-50 border-2 border-red-600 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center">
-                          {selectedParticipant.position}
-                        </div>
-                        <div>
-                          <p className="text-gray-900">{selectedParticipant.name}</p>
-                          <p className="text-gray-600 text-sm">Tú - {selectedParticipant.category}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-gray-900">{selectedParticipant.time}</p>
-                        <p className="text-gray-600 text-sm">{selectedParticipant.pace} min/km</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        );
-      })()}
+      {selectedParticipant && (
+        <ParticipantDetailModal
+          participant={selectedParticipant}
+          onClose={() => setSelectedParticipant(null)}
+          firstPlace={firstPlace}
+          previousParticipants={previousParticipants}
+        />
+      )}
     </div>
   );
 }

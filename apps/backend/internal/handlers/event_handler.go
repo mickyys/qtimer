@@ -405,3 +405,47 @@ func (h *EventHandler) UploadToEvent(c *gin.Context) {
 	// 6. Return success response
 	c.JSON(http.StatusOK, result)
 }
+
+// GetParticipantComparison obtiene el 1er lugar y los 5 participantes anteriores
+func (h *EventHandler) GetParticipantComparison(c *gin.Context) {
+	eventParam := c.Param("id")
+	bib := c.Query("bib")
+	distance := c.Query("distance")
+
+	if bib == "" || distance == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bib and distance parameters are required"})
+		return
+	}
+
+	// Resolve event to get the ID
+	var eventID string
+	if primitive.IsValidObjectID(eventParam) {
+		eventID = eventParam
+	} else if utils.IsValidSlug(eventParam) {
+		event, err := h.eventService.GetEventBySlug(eventParam)
+		if err != nil {
+			if err.Error() == "event not found" {
+				c.JSON(http.StatusNotFound, gin.H{"error": "event not found"})
+			} else {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			}
+			return
+		}
+		eventID = event.ID.Hex()
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid event identifier"})
+		return
+	}
+
+	result, err := h.eventService.GetParticipantComparison(eventID, bib, distance)
+	if err != nil {
+		if errors.Is(err, services.ErrInvalidObjectID) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}

@@ -753,3 +753,18 @@ func (s *eventService) parseRaceCheckFileForEvent(file io.ReadSeeker, fileHash s
 		Reprocessed:     true,
 	}, nil
 }
+
+// GetParticipantComparison obtiene el 1er lugar y los 5 participantes anteriores
+func (s *eventService) GetParticipantComparison(eventID string, bib string, distance string) (*ports.ComparisonResult, error) {
+	objID, err := primitive.ObjectIDFromHex(eventID)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrInvalidObjectID, err)
+	}
+
+	result, err := s.eventRepository.GetParticipantComparison(objID, bib, distance)
+	if err != nil {
+		return nil, fmt.Errorf("could not get participant comparison: %w", err)
+	}
+
+	return result, nil
+}

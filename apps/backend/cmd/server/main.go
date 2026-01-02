@@ -71,6 +71,7 @@ func main() {
 			events.DELETE("/:id", eventHandler.DeleteEvent)
 			events.PATCH("/:id/status", eventHandler.UpdateEventStatus)
 			events.GET("/:id/participants", eventHandler.GetParticipants)
+			events.GET("/:id/participants/comparison", eventHandler.GetParticipantComparison)
 		}
 	}
 

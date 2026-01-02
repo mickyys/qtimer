@@ -17,6 +17,11 @@ type FindParticipantsResult struct {
 	TotalCount   int64               `json:"totalCount"`
 }
 
+type ComparisonResult struct {
+	FirstPlace           *domain.EventData   `json:"firstPlace"`
+	PreviousParticipants []*domain.EventData `json:"previousParticipants"`
+}
+
 type EventRepository interface {
 	Save(event *domain.Event) error
 	FindByName(name string) (*domain.Event, error)
@@ -31,4 +36,5 @@ type EventRepository interface {
 	SaveAllData(data []domain.EventData) (int, error)
 	Find(name *string, date *time.Time, page int, limit int) (*FindEventsResult, error)
 	FindData(eventID primitive.ObjectID, name, chip, dorsal, category, distance, sex, position *string, page int, limit int) (*FindParticipantsResult, error)
+	GetParticipantComparison(eventID primitive.ObjectID, bib string, distance string) (*ComparisonResult, error)
 }

@@ -262,3 +262,40 @@ export const updateEventStatus = async (eventId: string, status: string): Promis
   return response.json();
 };
 
+interface ComparisonResponse {
+  firstPlace: Participant | null;
+  previousParticipants: Participant[];
+}
+
+// Obtener datos de comparación: 1er lugar y 5 anteriores a un participante
+export const getParticipantComparison = async (
+  eventSlug: string,
+  participantBib: string,
+  distance: string
+): Promise<ComparisonResponse> => {
+  const params = new URLSearchParams();
+  params.append("bib", participantBib);
+  params.append("distance", distance);
+
+  const response = await fetch(
+    `${API_URL}/events/${eventSlug}/participants/comparison?${params.toString()}`
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch participant comparison");
+  }
+
+  return response.json();
+};
+
+// Función para obtener un evento por slug
+export const getEventBySlug = async (slug: string): Promise<Event> => {
+  const response = await fetch(`${API_URL}/events/slug/${slug}`);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch event");
+  }
+
+  return response.json();
+};
+
