@@ -1,8 +1,14 @@
+"use client";
+
+import { useModal } from "@/context/ModalContext";
 
 const WhatsAppButton: React.FC = () => {
+    const { isModalOpen } = useModal();
     const phoneNumber = '56956172353';
     const message = 'Hola, me gustaría contactar a QuintaTimer';
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+
+    if (isModalOpen) return null;
 
     return (
         <a
