@@ -141,7 +141,7 @@ export default function ParticipantDetailModal({
               
               <div className="space-y-2">
                 {/* First Place */}
-                {firstPlace && firstPlace.position !== participant.position && (
+                {firstPlace && firstPlace.categoryPosition !== participant.categoryPosition && (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -192,7 +192,7 @@ export default function ParticipantDetailModal({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold">
-                        {participant.position}
+                        {participant.categoryPosition}
                       </div>
                       <div>
                         <p className="text-gray-900 font-semibold">{participant.name}</p>
