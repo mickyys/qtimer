@@ -39,9 +39,8 @@ export default function ParticipantDetailModal({
   const { setIsModalOpen } = useModal();
 
   useEffect(() => {
-    if (participant) {
-      setIsModalOpen(true);
-    }
+    setIsModalOpen(!!participant);
+    
     return () => {
       setIsModalOpen(false);
     };
@@ -50,7 +49,6 @@ export default function ParticipantDetailModal({
   if (!participant) return null;
 
   const handleClose = () => {
-    setIsModalOpen(false);
     onClose();
   };
 
