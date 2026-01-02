@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -224,16 +225,22 @@ func (r *mongoEventRepository) FindData(eventID primitive.ObjectID, name, chip, 
 	}
 	if dorsal != nil {
 		if dorsalNum, err := parseSearchValue(*dorsal); err == nil {
+			// Si es numérico, buscar como número y también como string
 			orConditions = append(orConditions,
 				bson.M{"data.Dorsal": dorsalNum},
 				bson.M{"data.DORSAL": dorsalNum},
 				bson.M{"data.dorsal": dorsalNum},
-			)
-		} else {
-			orConditions = append(orConditions,
 				bson.M{"data.Dorsal": *dorsal},
 				bson.M{"data.DORSAL": *dorsal},
 				bson.M{"data.dorsal": *dorsal},
+			)
+		} else {
+			// Búsqueda exacta case-insensitive usando regex con ^...$ para asegurar coincidencia completa
+			escapedDorsal := regexp.QuoteMeta(*dorsal)
+			orConditions = append(orConditions,
+				bson.M{"data.Dorsal": bson.M{"$regex": "^" + escapedDorsal + "$", "$options": "i"}},
+				bson.M{"data.DORSAL": bson.M{"$regex": "^" + escapedDorsal + "$", "$options": "i"}},
+				bson.M{"data.dorsal": bson.M{"$regex": "^" + escapedDorsal + "$", "$options": "i"}},
 			)
 		}
 	}
