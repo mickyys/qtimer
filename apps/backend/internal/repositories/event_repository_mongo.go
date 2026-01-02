@@ -228,10 +228,18 @@ func (r *mongoEventRepository) FindData(eventID primitive.ObjectID, name, chip, 
 		if dorsalNum, err := parseSearchValue(*dorsal); err == nil {
 			orConditions = append(orConditions,
 				bson.M{"data.Dorsal": dorsalNum},
+				bson.M{"data.DORSAL": dorsalNum},
+				bson.M{"data.dorsal": dorsalNum},
 				bson.M{"data.Dorsal": bson.M{"$regex": *dorsal, "$options": "i"}},
+				bson.M{"data.DORSAL": bson.M{"$regex": *dorsal, "$options": "i"}},
+				bson.M{"data.dorsal": bson.M{"$regex": *dorsal, "$options": "i"}},
 			)
 		} else {
-			filter["data.Dorsal"] = bson.M{"$regex": *dorsal, "$options": "i"}
+			orConditions = append(orConditions,
+				bson.M{"data.Dorsal": bson.M{"$regex": *dorsal, "$options": "i"}},
+				bson.M{"data.DORSAL": bson.M{"$regex": *dorsal, "$options": "i"}},
+				bson.M{"data.dorsal": bson.M{"$regex": *dorsal, "$options": "i"}},
+			)
 		}
 	}
 	if position != nil {
@@ -350,4 +358,106 @@ func (r *mongoEventRepository) UpdateStatus(id primitive.ObjectID, status string
 		bson.M{"$set": bson.M{"status": status}},
 	)
 	return err
+}
+
+// GetParticipantComparison obtiene el 1er lugar y los 5 participantes anteriores
+func (r *mongoEventRepository) GetParticipantComparison(eventID primitive.ObjectID, bib string, distance string) (*ports.ComparisonResult, error) {
+	collection := r.getEventDataCollection()
+
+	// Filtro para obtener participantes de la misma distancia
+	distanceFilter := bson.M{
+		"eventId": eventID,
+		"$or": []bson.M{
+			bson.M{"data.MODALIDAD": bson.M{"$regex": distance, "$options": "i"}},
+			bson.M{"data.distance": bson.M{"$regex": distance, "$options": "i"}},
+			bson.M{"data.distancia": bson.M{"$regex": distance, "$options": "i"}},
+		},
+	}
+
+	// Obtener todos los participantes de la misma distancia, ordenados por posición
+	opts := options.Find().SetSort(bson.D{
+		{Key: "data.POSICION", Value: 1},
+	})
+	cursor, err := collection.Find(context.Background(), distanceFilter, opts)
+	if err != nil {
+		return nil, fmt.Errorf("could not find participants: %w", err)
+	}
+	defer cursor.Close(context.Background())
+
+	var allParticipants []*domain.EventData
+	if err := cursor.All(context.Background(), &allParticipants); err != nil {
+		return nil, fmt.Errorf("could not decode participants: %w", err)
+	}
+
+	result := &ports.ComparisonResult{
+		FirstPlace:           nil,
+		PreviousParticipants: []*domain.EventData{},
+	}
+
+	if len(allParticipants) == 0 {
+		return result, nil
+	}
+
+	// Buscar el participante seleccionado por dorsal
+	var selectedIndex = -1
+	for i, p := range allParticipants {
+		bibValue := getBibValue(p.Data)
+		if bibValue == bib {
+			selectedIndex = i
+			break
+		}
+	}
+
+	// Si no se encuentra el participante, devolver sin datos
+	if selectedIndex == -1 {
+		return result, nil
+	}
+
+	// Obtener los 5 anteriores (máximo)
+	startIndex := 0
+	if selectedIndex > 5 {
+		startIndex = selectedIndex - 5
+	}
+
+	// Agregar los participantes anteriores
+	previousParticipantsSet := make(map[string]*domain.EventData)
+	for i := startIndex; i < selectedIndex; i++ {
+		bibVal := getBibValue(allParticipants[i].Data)
+		previousParticipantsSet[bibVal] = allParticipants[i]
+		result.PreviousParticipants = append(result.PreviousParticipants, allParticipants[i])
+	}
+
+	// Obtener el 1er lugar (siempre es el primero)
+	firstPlaceBib := getBibValue(allParticipants[0].Data)
+
+	// Si el 1er lugar no está en los 5 anteriores, agregarlo
+	if _, exists := previousParticipantsSet[firstPlaceBib]; !exists {
+		result.FirstPlace = allParticipants[0]
+	}
+
+	return result, nil
+}
+
+// getBibValue extrae el valor del dorsal de múltiples campos posibles
+func getBibValue(data map[string]interface{}) string {
+	possibleKeys := []string{"DORSAL", "dorsal", "bib", "Dorsal", "Bib"}
+
+	for _, key := range possibleKeys {
+		if val, ok := data[key]; ok {
+			switch v := val.(type) {
+			case string:
+				return v
+			case float64:
+				return strconv.FormatFloat(v, 'f', 0, 64)
+			case int:
+				return strconv.Itoa(v)
+			case int32:
+				return strconv.Itoa(int(v))
+			case int64:
+				return strconv.FormatInt(v, 10)
+			}
+		}
+	}
+
+	return ""
 }
