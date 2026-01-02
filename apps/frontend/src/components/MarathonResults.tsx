@@ -230,7 +230,7 @@ export function MarathonResults({ eventSlug }: MarathonResultsProps) {
               <label className="block text-gray-700 mb-3">Buscar por Dorsal</label>
               <div className="relative">
                 <input
-                  type="text"
+                  type="number"
                   value={searchBib}
                   onChange={(e) => handleBibChange(e.target.value)}
                   placeholder="Escribe el número de dorsal..."
