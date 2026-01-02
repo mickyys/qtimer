@@ -123,6 +123,16 @@ func (s *eventService) CreateEvent(req *ports.CreateEventRequest) (*domain.Event
 	// Generate slug from event name
 	slug := utils.GenerateSlug(req.Name)
 
+	// Validate that the generated slug is valid
+	if slug == "" {
+		return nil, errors.New("event name must contain at least one valid character (letters or numbers)")
+	}
+
+	// Check if slug is valid format
+	if !utils.IsValidSlug(slug) {
+		return nil, fmt.Errorf("invalid slug generated from event name: %s. Please use only letters, numbers, and spaces", req.Name)
+	}
+
 	// Parse date solo si se proporciona (format: YYYY-MM-DD)
 	var parsedDate time.Time
 	if req.Date != "" {
