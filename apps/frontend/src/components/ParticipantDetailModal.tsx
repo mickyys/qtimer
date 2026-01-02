@@ -48,6 +48,13 @@ export default function ParticipantDetailModal({
 
   if (!participant) return null;
 
+  // Si firstPlace es null pero previousParticipants tiene elementos, usar el primero como ganador
+  const winner = firstPlace || (previousParticipants && previousParticipants.length > 0 ? previousParticipants[0] : null);
+  // Filtrar previousParticipants para excluir al ganador si lo tomamos de ese array
+  const prevParticipants = firstPlace 
+    ? previousParticipants 
+    : (previousParticipants && previousParticipants.length > 1 ? previousParticipants.slice(1) : []);
+
   const handleClose = () => {
     onClose();
   };
@@ -132,7 +139,7 @@ export default function ParticipantDetailModal({
           </div>
 
           {/* Comparison Section */}
-          {(firstPlace || previousParticipants.length > 0) && (
+          {(winner || prevParticipants.length > 0) && (
             <div className="mb-6">
               <h3 className="text-gray-900 font-semibold mb-4 flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-yellow-500" />
@@ -141,31 +148,31 @@ export default function ParticipantDetailModal({
               
               <div className="space-y-2">
                 {/* First Place */}
-                {firstPlace && firstPlace.categoryPosition !== participant.categoryPosition && (
+                {winner && winner.categoryPosition !== participant.categoryPosition && (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <Trophy className="w-5 h-5 text-yellow-500" />
                         <div>
-                          <p className="text-gray-900 font-semibold">{firstPlace.name}</p>
-                          <p className="text-gray-600 text-sm">1° Lugar - {firstPlace.category}</p>
+                          <p className="text-gray-900 font-semibold">{winner.name}</p>
+                          <p className="text-gray-600 text-sm">1° Lugar - {winner.category}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-gray-900 font-semibold">{firstPlace.time}</p>
-                        <p className="text-gray-600 text-sm">{firstPlace.pace} </p>
+                        <p className="text-gray-900 font-semibold">{winner.time}</p>
+                        <p className="text-gray-600 text-sm">{winner.pace} </p>
                       </div>
                     </div>
                   </div>
                 )}
                 
                 {/* Previous 5 Participants */}
-                {previousParticipants.length > 0 && (
+                {prevParticipants.length > 0 && (
                   <>
                     <div className="pt-3 pb-2">
                       <p className="text-gray-600 text-sm font-semibold">Corredores anteriores</p>
                     </div>
-                    {previousParticipants.map((p, index) => (
+                    {prevParticipants.map((p, index) => (
                       <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">

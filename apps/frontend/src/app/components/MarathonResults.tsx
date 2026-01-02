@@ -46,13 +46,17 @@ export function MarathonResults({ participants = [] }: MarathonResultsProps) {
 
   // Get surrounding participants for comparison
   const getSurroundingParticipants = (participant: Participant) => {
-    const sameDistance = participants.filter(p => p.distance === participant.distance);
-    const firstPlace = sameDistance[0];
+    const sameCategoryAndDistance = participants.filter(
+      p => p.distance === participant.distance && p.category === participant.category
+    );
+    const firstPlace = sameCategoryAndDistance.length > 0 ? sameCategoryAndDistance[0] : null;
     
     // Get 5 participants before the selected one
-    const participantIndex = sameDistance.findIndex(p => p.position === participant.position);
+    const participantIndex = sameCategoryAndDistance.findIndex(
+      p => p.categoryPosition === participant.categoryPosition
+    );
     const startIndex = Math.max(0, participantIndex - 5);
-    const previousParticipants = sameDistance.slice(startIndex, participantIndex);
+    const previousParticipants = sameCategoryAndDistance.slice(startIndex, participantIndex);
     
     return { firstPlace, previousParticipants };
   };
