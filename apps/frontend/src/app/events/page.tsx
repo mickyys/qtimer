@@ -42,7 +42,7 @@ const mapBackendEventToFrontend = (backendEvent: any): FrontendEvent => {
     distances: ['5K', '10K', '21K'], // Valores por defecto, se podrían obtener del backend en el futuro
     participants: backendEvent.recordsCount || 0,
     modalities: backendEvent.uniqueModalities || [],
-    slug: backendEvent.name ? backendEvent.name.replace(/\s+/g, "-").toLowerCase() : backendEvent.id
+    slug: backendEvent.slug || '',
   };
 };
 

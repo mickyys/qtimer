@@ -23,16 +23,12 @@ import (
 )
 
 type eventService struct {
-	eventRepository    ports.EventRepository
-	raceRepository     ports.RaceRepository
-	categoryRepository ports.CategoryRepository
+	eventRepository ports.EventRepository
 }
 
-func NewEventService(eventRepository ports.EventRepository, raceRepository ports.RaceRepository, categoryRepository ports.CategoryRepository) ports.EventService {
+func NewEventService(eventRepository ports.EventRepository) ports.EventService {
 	return &eventService{
-		eventRepository:    eventRepository,
-		raceRepository:     raceRepository,
-		categoryRepository: categoryRepository,
+		eventRepository: eventRepository,
 	}
 }
 
@@ -418,28 +414,12 @@ func (s *eventService) UpdateEventStatus(id string, status string) (*domain.Even
 	return event, nil
 }
 
-func (s *eventService) GetRaces(eventID string) ([]*domain.Race, error) {
-	objID, err := primitive.ObjectIDFromHex(eventID)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidObjectID, err)
-	}
-
-	races, err := s.raceRepository.FindByEventID(objID)
-	if err != nil {
-		return nil, fmt.Errorf("could not get races: %w", err)
-	}
-
-	return races, nil
-}
-
 func (s *eventService) parseRaceCheckFile(file io.ReadSeeker, fileHash string) (*ports.UploadResult, error) {
 	scanner := bufio.NewScanner(file)
 	var event *domain.Event
 	var allEventData []domain.EventData
-	var allRaces []domain.Race
 	var headers []string
-	var currentRace *domain.Race
-	reprocessed := false
+	var reprocessed bool
 
 	// Maps para recopilar valores únicos
 	uniqueModalities := make(map[string]bool)
@@ -464,28 +444,14 @@ func (s *eventService) parseRaceCheckFile(file io.ReadSeeker, fileHash string) (
 		}
 	}
 
-	raceOrder := 0
-
 	// Process remaining lines
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		// Check if it's a race line (format: ;1|CAD 3G)
+		// Check if it's a race line (format: ;1|CAD 3G) - skip it
 		if strings.HasPrefix(line, ";") && strings.Contains(line, "|") && !strings.HasPrefix(line, ";SEXO") {
 			parts := strings.Split(strings.TrimPrefix(line, ";"), "|")
 			if len(parts) >= 2 {
-				raceOrder++
-				raceName := parts[1] // Ej: "CAD 3G"
-
-				// Save previous race if exists
-				if currentRace != nil {
-					allRaces = append(allRaces, *currentRace)
-				}
-
-				currentRace = &domain.Race{
-					Name:  raceName,
-					Order: raceOrder,
-				}
 				headers = nil // Reset headers for new race
 				continue
 			}
@@ -497,8 +463,8 @@ func (s *eventService) parseRaceCheckFile(file io.ReadSeeker, fileHash string) (
 			continue
 		}
 
-		// Skip empty lines or lines without headers/current race
-		if len(headers) == 0 || currentRace == nil {
+		// Skip empty lines or lines without headers
+		if len(headers) == 0 {
 			continue
 		}
 
@@ -513,11 +479,6 @@ func (s *eventService) parseRaceCheckFile(file io.ReadSeeker, fileHash string) (
 			dataMap[h] = values[i]
 		}
 
-		// Extract category from the data and set it in the race if not set
-		if categoria, ok := dataMap["CATEGORIA"]; ok && currentRace.Category == "" {
-			currentRace.Category = categoria
-		}
-
 		// Recopilar valores únicos para filtros
 		if modalidad, ok := dataMap["MODALIDAD"]; ok && modalidad != "" {
 			uniqueModalities[modalidad] = true
@@ -530,11 +491,6 @@ func (s *eventService) parseRaceCheckFile(file io.ReadSeeker, fileHash string) (
 		convertedData := validateAndConvertData(dataMap)
 		eventData := domain.EventData{Data: convertedData}
 		allEventData = append(allEventData, eventData)
-	}
-
-	// Don't forget to add the last race
-	if currentRace != nil {
-		allRaces = append(allRaces, *currentRace)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -581,12 +537,9 @@ func (s *eventService) parseRaceCheckFile(file io.ReadSeeker, fileHash string) (
 		reprocessed = true
 		event.ID = existingEvent.ID
 
-		// Delete old data and races
+		// Delete old data
 		if err := s.eventRepository.DeleteEventData(existingEvent.ID); err != nil {
 			return nil, fmt.Errorf("could not delete old event data: %w", err)
-		}
-		if err := s.raceRepository.DeleteByEventID(existingEvent.ID); err != nil {
-			return nil, fmt.Errorf("could not delete old races: %w", err)
 		}
 		if err := s.eventRepository.UpdateFileStats(existingEvent.ID, fileHash, modalitiesSlice, categoriesSlice, len(allEventData)); err != nil {
 			return nil, fmt.Errorf("could not update event stats: %w", err)
@@ -598,43 +551,9 @@ func (s *eventService) parseRaceCheckFile(file io.ReadSeeker, fileHash string) (
 		}
 	}
 
-	// Process races to ensure categories exist and assign IDs
-	raceNameToID := make(map[string]primitive.ObjectID)
-
-	for i := range allRaces {
-		allRaces[i].ID = primitive.NewObjectID()
-		allRaces[i].EventID = event.ID
-
-		// Ensure category exists
-		if allRaces[i].Category != "" {
-			_, err := s.categoryRepository.FindOrCreate(allRaces[i].Category)
-			if err != nil {
-				return nil, fmt.Errorf("could not ensure category exists: %w", err)
-			}
-		}
-
-		raceNameToID[allRaces[i].Name] = allRaces[i].ID
-	}
-
-	// Save races
-	if len(allRaces) > 0 {
-		if err := s.raceRepository.SaveAll(allRaces); err != nil {
-			return nil, fmt.Errorf("could not save races: %w", err)
-		}
-	}
-
-	// Associate event data with races and save
+	// Process and save event data
 	for i := range allEventData {
 		allEventData[i].EventID = event.ID
-
-		// Try to find matching race by modalidad
-		if modalidad, ok := allEventData[i].Data["MODALIDAD"]; ok {
-			if modalidadStr, isString := modalidad.(string); isString {
-				if raceID, found := raceNameToID[modalidadStr]; found {
-					allEventData[i].RaceID = raceID
-				}
-			}
-		}
 	}
 
 	var recordsInserted int
@@ -718,9 +637,7 @@ func (s *eventService) UploadToEvent(fileHeader *multipart.FileHeader, clientHas
 func (s *eventService) parseRaceCheckFileForEvent(file io.ReadSeeker, fileHash string, event *domain.Event) (*ports.UploadResult, error) {
 	scanner := bufio.NewScanner(file)
 	var allEventData []domain.EventData
-	var allRaces []domain.Race
 	var headers []string
-	var currentRace *domain.Race
 
 	// Maps para recopilar valores únicos
 	uniqueModalities := make(map[string]bool)
@@ -731,28 +648,14 @@ func (s *eventService) parseRaceCheckFileForEvent(file io.ReadSeeker, fileHash s
 		// Just skip the event name line
 	}
 
-	raceOrder := 0
-
 	// Process remaining lines
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		// Check if it's a race line (format: ;1|CAD 3G)
+		// Check if it's a race line (format: ;1|CAD 3G) - skip it
 		if strings.HasPrefix(line, ";") && strings.Contains(line, "|") && !strings.HasPrefix(line, ";SEXO") {
 			parts := strings.Split(strings.TrimPrefix(line, ";"), "|")
 			if len(parts) >= 2 {
-				raceOrder++
-				raceName := parts[1] // Ej: "CAD 3G"
-
-				// Save previous race if exists
-				if currentRace != nil {
-					allRaces = append(allRaces, *currentRace)
-				}
-
-				currentRace = &domain.Race{
-					Name:  raceName,
-					Order: raceOrder,
-				}
 				headers = nil // Reset headers for new race
 				continue
 			}
@@ -764,8 +667,8 @@ func (s *eventService) parseRaceCheckFileForEvent(file io.ReadSeeker, fileHash s
 			continue
 		}
 
-		// Skip empty lines or lines without headers/current race
-		if len(headers) == 0 || currentRace == nil {
+		// Skip empty lines or lines without headers
+		if len(headers) == 0 {
 			continue
 		}
 
@@ -780,11 +683,6 @@ func (s *eventService) parseRaceCheckFileForEvent(file io.ReadSeeker, fileHash s
 			dataMap[h] = values[i]
 		}
 
-		// Extract category from the data and set it in the race if not set
-		if categoria, ok := dataMap["CATEGORIA"]; ok && currentRace.Category == "" {
-			currentRace.Category = categoria
-		}
-
 		// Recopilar valores únicos para filtros
 		if modalidad, ok := dataMap["MODALIDAD"]; ok && modalidad != "" {
 			uniqueModalities[modalidad] = true
@@ -797,11 +695,6 @@ func (s *eventService) parseRaceCheckFileForEvent(file io.ReadSeeker, fileHash s
 		convertedData := validateAndConvertData(dataMap)
 		eventData := domain.EventData{Data: convertedData}
 		allEventData = append(allEventData, eventData)
-	}
-
-	// Don't forget to add the last race
-	if currentRace != nil {
-		allRaces = append(allRaces, *currentRace)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -826,54 +719,17 @@ func (s *eventService) parseRaceCheckFileForEvent(file io.ReadSeeker, fileHash s
 	event.UniqueCategories = categoriesSlice
 	event.RecordsCount = len(allEventData)
 
-	// Delete old data and races
+	// Delete old data
 	if err := s.eventRepository.DeleteEventData(event.ID); err != nil {
 		return nil, fmt.Errorf("could not delete old event data: %w", err)
-	}
-	if err := s.raceRepository.DeleteByEventID(event.ID); err != nil {
-		return nil, fmt.Errorf("could not delete old races: %w", err)
 	}
 	if err := s.eventRepository.UpdateFileStats(event.ID, fileHash, modalitiesSlice, categoriesSlice, len(allEventData)); err != nil {
 		return nil, fmt.Errorf("could not update event stats: %w", err)
 	}
 
-	// Process races to ensure categories exist and assign IDs
-	raceNameToID := make(map[string]primitive.ObjectID)
-
-	for i := range allRaces {
-		allRaces[i].ID = primitive.NewObjectID()
-		allRaces[i].EventID = event.ID
-
-		// Ensure category exists
-		if allRaces[i].Category != "" {
-			_, err := s.categoryRepository.FindOrCreate(allRaces[i].Category)
-			if err != nil {
-				return nil, fmt.Errorf("could not ensure category exists: %w", err)
-			}
-		}
-
-		raceNameToID[allRaces[i].Name] = allRaces[i].ID
-	}
-
-	// Save races
-	if len(allRaces) > 0 {
-		if err := s.raceRepository.SaveAll(allRaces); err != nil {
-			return nil, fmt.Errorf("could not save races: %w", err)
-		}
-	}
-
-	// Associate event data with races and save
+	// Process and save event data
 	for i := range allEventData {
 		allEventData[i].EventID = event.ID
-
-		// Try to find matching race by modalidad
-		if modalidad, ok := allEventData[i].Data["MODALIDAD"]; ok {
-			if modalidadStr, isString := modalidad.(string); isString {
-				if raceID, found := raceNameToID[modalidadStr]; found {
-					allEventData[i].RaceID = raceID
-				}
-			}
-		}
 	}
 
 	var recordsInserted int
