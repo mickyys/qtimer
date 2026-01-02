@@ -6,6 +6,7 @@ import (
 	"backend/internal/core/services"
 	"backend/internal/utils"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -364,13 +365,16 @@ func (h *EventHandler) UpdateEventStatus(c *gin.Context) {
 func (h *EventHandler) UploadToEvent(c *gin.Context) {
 	// 1. Parse multipart form
 	if err := c.Request.ParseMultipartForm(10 << 20); err != nil { // 10 MB
+		fmt.Printf("[ERROR] Failed to parse multipart form: %v\n", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "could not parse multipart form"})
 		return
 	}
 
 	// 2. Get event ID from URL params
 	eventID := c.Param("id")
+	fmt.Printf("[INFO] UploadToEvent called with eventID: %s\n", eventID)
 	if eventID == "" {
+		fmt.Printf("[ERROR] event id is empty\n")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "event id is required"})
 		return
 	}
@@ -378,20 +382,26 @@ func (h *EventHandler) UploadToEvent(c *gin.Context) {
 	// 3. Get file from form
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
+		fmt.Printf("[ERROR] Failed to get file from form: %v\n", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "file is required"})
 		return
 	}
+	fmt.Printf("[INFO] File received: %s (size: %d bytes)\n", fileHeader.Filename, fileHeader.Size)
 
 	// 4. Get hash from form
 	clientHash := c.PostForm("hash")
 	if clientHash == "" {
+		fmt.Printf("[ERROR] hash is empty\n")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "hash is required"})
 		return
 	}
+	fmt.Printf("[INFO] Client hash: %s\n", clientHash)
 
 	// 5. Call service
+	fmt.Printf("[INFO] Calling eventService.UploadToEvent with eventID=%s, hash=%s\n", eventID, clientHash)
 	result, err := h.eventService.UploadToEvent(fileHeader, clientHash, eventID)
 	if err != nil {
+		fmt.Printf("[ERROR] UploadToEvent service failed: %v\n", err)
 		if errors.Is(err, services.ErrFileHashMismatch) || errors.Is(err, services.ErrInvalidFileExtension) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		} else if errors.Is(err, services.ErrInvalidObjectID) {
@@ -403,6 +413,7 @@ func (h *EventHandler) UploadToEvent(c *gin.Context) {
 	}
 
 	// 6. Return success response
+	fmt.Printf("[SUCCESS] Upload completed. EventID=%s, RecordsInserted=%d, Reprocessed=%v\n", result.EventID, result.RecordsInserted, result.Reprocessed)
 	c.JSON(http.StatusOK, result)
 }
 
