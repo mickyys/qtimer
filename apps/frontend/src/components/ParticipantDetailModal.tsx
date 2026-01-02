@@ -37,13 +37,25 @@ export default function ParticipantDetailModal({
   if (!participant) return null;
 
   const handleShareWhatsApp = () => {
-    const url = window.location.href;
-    const text = encodeURIComponent(`¡Mira mis resultados en QuintaTimer! 🏃\n\n*${participant.name}*\nPosición: ${participant.position}°\nTiempo: ${participant.time}\nRitmo: ${participant.pace}\n\nVer resultados: ${url}`);
+    // Crear URL con parámetros del participante
+    const baseUrl = window.location.href.split('?')[0]; // Remover query params anteriores
+    const shareUrl = `${baseUrl}?participantId=${encodeURIComponent(participant.name)}&position=${participant.position}&bib=${participant.bib}`;
+    
+    const text = encodeURIComponent(`¡Mira mis resultados en QuintaTimer! 🏃\n\n*${participant.name}*\nPosición: ${participant.position}°\nTiempo: ${participant.time}\nRitmo: ${participant.pace}\n\nVer resultados: ${shareUrl}`);
     window.open(`https://wa.me/?text=${text}`, "_blank");
   };
 
   const handleShareInstagram = () => {
-    alert("Para compartir en Instagram, te recomendamos tomar una captura de pantalla de este detalle.");
+    // Crear URL con parámetros del participante
+    const baseUrl = window.location.href.split('?')[0]; // Remover query params anteriores
+    const shareUrl = `${baseUrl}?participantId=${encodeURIComponent(participant.name)}&position=${participant.position}&bib=${participant.bib}`;
+    
+    // Copiar URL al portapapeles y mostrar instrucción
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      alert(`URL copiada al portapapeles. Puedes compartirla en Instagram Bio o Direct Messages.\n\n${shareUrl}`);
+    }).catch(() => {
+      alert(`Copia este link para compartir en Instagram:\n${shareUrl}`);
+    });
   };
 
   return (

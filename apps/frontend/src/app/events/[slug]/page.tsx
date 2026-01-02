@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { getParticipants } from "@/services/api";
+import { getParticipants, getEventBySlug } from "@/services/api";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import ParticipantDetailModal from "@/components/ParticipantDetailModal";
 import { MarathonResults } from "@/components/MarathonResults";
@@ -11,6 +11,19 @@ import { MarathonResults } from "@/components/MarathonResults";
 interface Participant {
   id: string;
   data: { [key: string]: string };
+}
+
+interface Event {
+  id: string;
+  name: string;
+  date: string;
+  time: string;
+  address: string;
+  imageUrl: string;
+  fileName: string;
+  fileExtension: string;
+  status: string;
+  createdAt: string;
 }
 
 type Filters = {
@@ -37,6 +50,8 @@ export default function ParticipantsPage() {
 
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [event, setEvent] = useState<Event | null>(null);
+  const [eventLoading, setEventLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>({
     name: "", chip: "", dorsal: "", category: "", sex: "", position: "",
   });
@@ -46,6 +61,25 @@ export default function ParticipantsPage() {
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
 
   const limit = 200;
+
+  // Obtener información del evento
+  useEffect(() => {
+    const fetchEvent = async () => {
+      try {
+        setEventLoading(true);
+        const eventData = await getEventBySlug(eventId);
+        setEvent(eventData);
+      } catch (err) {
+        console.error("Error fetching event:", err);
+      } finally {
+        setEventLoading(false);
+      }
+    };
+
+    if (eventId) {
+      fetchEvent();
+    }
+  }, [eventId]);
 
   const fetchParticipants = useCallback(async () => {
     if (!eventId) return;
@@ -78,5 +112,5 @@ export default function ParticipantsPage() {
 
   const totalPages = Math.ceil(totalCount / limit);
 
-  return <MarathonResults eventSlug={eventId}/>
+  return <MarathonResults eventSlug={eventId} event={event} />
 }

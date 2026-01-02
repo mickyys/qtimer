@@ -288,3 +288,14 @@ export const getParticipantComparison = async (
   return response.json();
 };
 
+// Función para obtener un evento por slug
+export const getEventBySlug = async (slug: string): Promise<Event> => {
+  const response = await fetch(`${API_URL}/events/slug/${slug}`);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch event");
+  }
+
+  return response.json();
+};
+

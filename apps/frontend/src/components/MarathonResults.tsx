@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Filter, Trophy, Medal, Award, ChevronDown, X, MapPin, Calendar, Timer, TrendingUp, User } from 'lucide-react';
 import { getParticipantsBySlug, getParticipantComparison } from '../services/api';
 import ParticipantDetailModal from './ParticipantDetailModal';
@@ -42,9 +43,23 @@ const capitalizeString = (str: string): string => {
 
 interface MarathonResultsProps {
   eventSlug: string;
+  event?: {
+    id: string;
+    name: string;
+    date: string;
+    time: string;
+    address: string;
+    imageUrl: string;
+    fileName: string;
+    fileExtension: string;
+    status: string;
+    createdAt: string;
+  } | null;
 }
 
-export function MarathonResults({ eventSlug }: MarathonResultsProps) {
+export function MarathonResults({ eventSlug, event }: MarathonResultsProps) {
+  const searchParams = useSearchParams();
+  
   const [selectedDistance, setSelectedDistance] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchName, setSearchName] = useState<string>('');
@@ -141,6 +156,105 @@ export function MarathonResults({ eventSlug }: MarathonResultsProps) {
       }
     };
   }, [searchName, searchBib, selectedDistance, selectedCategory, eventSlug, loadParticipantsWithFilters]);
+
+  // Efecto para leer query params y abrir el modal del participante
+  useEffect(() => {
+    const participantId = searchParams.get('participantId');
+    const position = searchParams.get('position');
+    
+    if (participantId && participants.length > 0 && !selectedParticipant) {
+      // Decodificar el nombre del participante desde la URL
+      const decodedName = decodeURIComponent(participantId);
+      
+      // Buscar el participante por nombre o posición
+      const foundParticipant = participants.find(
+        p => p.name.toLowerCase() === decodedName.toLowerCase() ||
+             (position && p.position === parseInt(position))
+      );
+      
+      if (foundParticipant) {
+        handleSelectParticipant(foundParticipant);
+        
+        // Actualizar metatags
+        updateMetaTags(foundParticipant);
+      }
+    }
+  }, [searchParams, participants, selectedParticipant]);
+
+  // Función para actualizar metatags dinámicamente
+  const updateMetaTags = (participant: ProcessedParticipant) => {
+    const eventName = event?.name || 'QuintaTimer';
+    const title = `${participant.name} - ${eventName} | Posición ${participant.position}°`;
+    const description = `${participant.name} finalizó en posición ${participant.position}° en ${eventName}. Tiempo: ${participant.time} | Ritmo: ${participant.pace} min/km | Categoría: ${participant.category}`;
+    const image = event?.imageUrl || `https://via.placeholder.com/1200x630?text=${encodeURIComponent(participant.name)}+%23${participant.position}`;
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+
+    // Actualizar og:title
+    let ogTitle = document.querySelector('meta[property="og:title"]');
+    if (!ogTitle) {
+      ogTitle = document.createElement('meta');
+      ogTitle.setAttribute('property', 'og:title');
+      document.head.appendChild(ogTitle);
+    }
+    ogTitle.setAttribute('content', title);
+
+    // Actualizar og:description
+    let ogDescription = document.querySelector('meta[property="og:description"]');
+    if (!ogDescription) {
+      ogDescription = document.createElement('meta');
+      ogDescription.setAttribute('property', 'og:description');
+      document.head.appendChild(ogDescription);
+    }
+    ogDescription.setAttribute('content', description);
+
+    // Actualizar og:image
+    let ogImage = document.querySelector('meta[property="og:image"]');
+    if (!ogImage) {
+      ogImage = document.createElement('meta');
+      ogImage.setAttribute('property', 'og:image');
+      document.head.appendChild(ogImage);
+    }
+    ogImage.setAttribute('content', image);
+
+    // Actualizar og:url
+    let ogUrl = document.querySelector('meta[property="og:url"]');
+    if (!ogUrl) {
+      ogUrl = document.createElement('meta');
+      ogUrl.setAttribute('property', 'og:url');
+      document.head.appendChild(ogUrl);
+    }
+    ogUrl.setAttribute('content', url);
+
+    // Actualizar twitter:title
+    let twitterTitle = document.querySelector('meta[name="twitter:title"]');
+    if (!twitterTitle) {
+      twitterTitle = document.createElement('meta');
+      twitterTitle.setAttribute('name', 'twitter:title');
+      document.head.appendChild(twitterTitle);
+    }
+    twitterTitle.setAttribute('content', title);
+
+    // Actualizar twitter:description
+    let twitterDescription = document.querySelector('meta[name="twitter:description"]');
+    if (!twitterDescription) {
+      twitterDescription = document.createElement('meta');
+      twitterDescription.setAttribute('name', 'twitter:description');
+      document.head.appendChild(twitterDescription);
+    }
+    twitterDescription.setAttribute('content', description);
+
+    // Actualizar twitter:image
+    let twitterImage = document.querySelector('meta[name="twitter:image"]');
+    if (!twitterImage) {
+      twitterImage = document.createElement('meta');
+      twitterImage.setAttribute('name', 'twitter:image');
+      document.head.appendChild(twitterImage);
+    }
+    twitterImage.setAttribute('content', image);
+
+    // Actualizar title de la página
+    document.title = title;
+  }
 
   // Los participantes mostrados ahora son todos los que vienen del servidor
   const filteredParticipants = participants;
