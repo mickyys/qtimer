@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Filter, Trophy, Medal, Award, ChevronDown, X, MapPin, Calendar, Timer, TrendingUp, User } from 'lucide-react';
 import { getParticipantsBySlug } from '../services/api';
 
@@ -109,22 +109,53 @@ export function MarathonResults({ eventSlug }: MarathonResultsProps) {
     }
   }, [eventSlug, selectedDistance, selectedCategory, searchName, searchBib]);
 
-  // Debounce para búsquedas de texto
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (eventSlug) {
-        loadParticipantsWithFilters();
-      }
-    }, searchName || searchBib ? 500 : 0); // 500ms de delay para búsquedas de texto
+  // Ref para el timeout del debounce
+  const searchTimeoutRef = useRef<NodeJS.Timeout>();
+  const filterTimeoutRef = useRef<NodeJS.Timeout>();
 
-    return () => clearTimeout(timeoutId);
-  }, [loadParticipantsWithFilters, searchName, searchBib, eventSlug]);
-
-  // Efecto para cambios inmediatos en filtros de selección
+  // Debounce para búsquedas de texto (500ms)
   useEffect(() => {
-    if (eventSlug) {
-      loadParticipantsWithFilters();
+    // Cancelar timeout anterior
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
     }
+
+    if (eventSlug && (searchName || searchBib)) {
+      // Mostrar loading mientras se espera
+      setLoading(true);
+      
+      searchTimeoutRef.current = setTimeout(() => {
+        loadParticipantsWithFilters();
+      }, 500); // Esperar 500ms después de que el usuario deje de escribir
+    }
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchName, searchBib, eventSlug]);
+
+  // Debounce para cambios en filtros de selección (300ms)
+  useEffect(() => {
+    // Cancelar timeout anterior
+    if (filterTimeoutRef.current) {
+      clearTimeout(filterTimeoutRef.current);
+    }
+
+    if (eventSlug) {
+      setLoading(true);
+      
+      filterTimeoutRef.current = setTimeout(() => {
+        loadParticipantsWithFilters();
+      }, 300); // Esperar 300ms para permitir cambios rápidos de filtros
+    }
+
+    return () => {
+      if (filterTimeoutRef.current) {
+        clearTimeout(filterTimeoutRef.current);
+      }
+    };
   }, [selectedDistance, selectedCategory, eventSlug]);
 
   // Los participantes mostrados ahora son todos los que vienen del servidor
@@ -230,12 +261,15 @@ export function MarathonResults({ eventSlug }: MarathonResultsProps) {
               <label className="block text-gray-700 mb-3">Buscar por Dorsal</label>
               <div className="relative">
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={searchBib}
                   onChange={(e) => handleBibChange(e.target.value)}
                   placeholder="Escribe el número de dorsal..."
                   className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-700 placeholder-gray-400 hover:border-red-600 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-colors"
                 />
+
                 {loading && searchBib && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
                     <div className="animate-spin h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full"></div>
