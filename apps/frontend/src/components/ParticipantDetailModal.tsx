@@ -153,7 +153,7 @@ export default function ParticipantDetailModal({
                       </div>
                       <div className="text-right">
                         <p className="text-gray-900 font-semibold">{firstPlace.time}</p>
-                        <p className="text-gray-600 text-sm">{firstPlace.pace} min/km</p>
+                        <p className="text-gray-600 text-sm">{firstPlace.pace} </p>
                       </div>
                     </div>
                   </div>
@@ -179,7 +179,7 @@ export default function ParticipantDetailModal({
                           </div>
                           <div className="text-right">
                             <p className="text-gray-900 text-sm font-semibold">{p.time}</p>
-                            <p className="text-gray-600 text-xs">{p.pace} min/km</p>
+                            <p className="text-gray-600 text-xs">{p.pace} </p>
                           </div>
                         </div>
                       </div>
@@ -201,7 +201,7 @@ export default function ParticipantDetailModal({
                     </div>
                     <div className="text-right">
                       <p className="text-gray-900 font-semibold">{participant.time}</p>
-                      <p className="text-gray-600 text-sm">{participant.pace} min/km</p>
+                      <p className="text-gray-600 text-sm">{participant.pace} </p>
                     </div>
                   </div>
                 </div>

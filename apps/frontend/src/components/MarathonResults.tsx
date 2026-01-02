@@ -193,7 +193,7 @@ export function MarathonResults({ eventSlug, event }: MarathonResultsProps) {
   const updateMetaTags = (participant: ProcessedParticipant) => {
     const eventName = event?.name || 'QuintaTimer';
     const title = `${participant.name} - ${eventName} | Posición ${participant.position}°`;
-    const description = `${participant.name} finalizó en posición ${participant.position}° en ${eventName}. Tiempo: ${participant.time} | Ritmo: ${participant.pace} min/km | Categoría: ${participant.category}`;
+    const description = `${participant.name} finalizó en posición ${participant.position}° en ${eventName}. Tiempo: ${participant.time} | Ritmo: ${participant.pace}  | Categoría: ${participant.category}`;
     const image = event?.imageUrl || `https://via.placeholder.com/1200x630?text=${encodeURIComponent(participant.name)}+%23${participant.position}`;
     const url = typeof window !== 'undefined' ? window.location.href : '';
 
@@ -627,7 +627,7 @@ export function MarathonResults({ eventSlug, event }: MarathonResultsProps) {
                       </td>
                       <td className="px-6 py-4 text-gray-600">{participant.sex || 'N/A'}</td>
                       <td className="px-6 py-4 text-gray-900">{participant.time}</td>
-                      <td className="px-6 py-4 text-gray-600">{participant.pace} min/km</td>
+                      <td className="px-6 py-4 text-gray-600">{participant.pace} </td>
                     </tr>
                   ))
                 ) : (
