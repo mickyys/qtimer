@@ -40,6 +40,7 @@ type EventService interface {
 	GetEvent(id string) (*domain.Event, error)
 	GetEventBySlug(slug string) (*domain.Event, error)
 	UpdateEvent(id string, req *UpdateEventRequest) (*domain.Event, error)
+	UpdateEventImage(id string, imageURL string) (*domain.Event, error)
 	DeleteEvent(id string) error
 	UpdateEventStatus(id string, status string) (*domain.Event, error)
 	GetEvents(name *string, date *time.Time, page int, limit int) (*FindEventsResult, error)

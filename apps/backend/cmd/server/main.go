@@ -69,6 +69,7 @@ func main() {
 			events.GET("/slug/:slug", eventHandler.GetEventBySlug)
 			events.GET("/:id", eventHandler.GetEvent)
 			events.PUT("/:id", eventHandler.UpdateEvent)
+			events.PATCH("/:id/image", eventHandler.UpdateEventImage)
 			events.DELETE("/:id", eventHandler.DeleteEvent)
 			events.PATCH("/:id/status", eventHandler.UpdateEventStatus)
 			events.GET("/:id/participants", eventHandler.GetParticipants)

@@ -327,6 +327,7 @@ func (r *mongoEventRepository) Update(id primitive.ObjectID, event *domain.Event
 		bson.M{"_id": id},
 		bson.M{"$set": bson.M{
 			"name":             event.Name,
+			"slug":             event.Slug,
 			"date":             event.Date,
 			"time":             event.Time,
 			"address":          event.Address,
@@ -334,6 +335,7 @@ func (r *mongoEventRepository) Update(id primitive.ObjectID, event *domain.Event
 			"fileName":         event.FileName,
 			"fileExtension":    event.FileExtension,
 			"status":           event.Status,
+			"fileHash":         event.FileHash,
 			"uniqueModalities": event.UniqueModalities,
 			"uniqueCategories": event.UniqueCategories,
 			"recordsCount":     event.RecordsCount,

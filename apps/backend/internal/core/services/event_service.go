@@ -323,16 +323,23 @@ func (s *eventService) UpdateEvent(id string, req *ports.UpdateEventRequest) (*d
 		parsedDate = existingEvent.Date
 	}
 
-	// Prepare updated event
+	// Prepare updated event, preserving all existing fields
 	updatedEvent := &domain.Event{
-		Name:          req.Name,
-		Date:          parsedDate,
-		Time:          req.Time,
-		Address:       req.Address,
-		ImageURL:      req.ImageURL,
-		FileName:      req.FileName,
-		FileExtension: req.FileExtension,
-		Status:        existingEvent.Status, // Keep existing status
+		ID:               existingEvent.ID,
+		Name:             req.Name,
+		Date:             parsedDate,
+		Time:             req.Time,
+		Address:          req.Address,
+		ImageURL:         req.ImageURL,
+		FileName:         req.FileName,
+		FileExtension:    req.FileExtension,
+		Status:           existingEvent.Status, // Keep existing status
+		CreatedAt:        existingEvent.CreatedAt,
+		FileHash:         existingEvent.FileHash,         // Keep existing file hash
+		UniqueModalities: existingEvent.UniqueModalities, // Keep existing modalities
+		UniqueCategories: existingEvent.UniqueCategories, // Keep existing categories
+		RecordsCount:     existingEvent.RecordsCount,     // Keep existing records count
+		Slug:             existingEvent.Slug,             // Keep existing slug
 	}
 
 	// Set default file extension if empty
@@ -345,12 +352,33 @@ func (s *eventService) UpdateEvent(id string, req *ports.UpdateEventRequest) (*d
 		return nil, fmt.Errorf("could not update event: %w", err)
 	}
 
-	// Return updated event with original fields
-	updatedEvent.ID = existingEvent.ID
-	updatedEvent.CreatedAt = existingEvent.CreatedAt
-	updatedEvent.FileHash = existingEvent.FileHash
-
 	return updatedEvent, nil
+}
+
+func (s *eventService) UpdateEventImage(id string, imageURL string) (*domain.Event, error) {
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrInvalidObjectID, err)
+	}
+
+	// Get existing event
+	existingEvent, err := s.eventRepository.FindByID(objID)
+	if err != nil {
+		return nil, fmt.Errorf("could not get existing event: %w", err)
+	}
+	if existingEvent == nil {
+		return nil, errors.New("event not found")
+	}
+
+	// Update only the image URL, preserving all other fields
+	existingEvent.ImageURL = imageURL
+
+	// Update in database
+	if err := s.eventRepository.Update(objID, existingEvent); err != nil {
+		return nil, fmt.Errorf("could not update event image: %w", err)
+	}
+
+	return existingEvent, nil
 }
 
 func (s *eventService) DeleteEvent(id string) error {

@@ -362,6 +362,7 @@ export default function EditEventPage() {
               </label>
               <ImageUpload 
                 onImageUpload={handleImageUpload}
+                eventId={eventId}
               />
             </div>
 

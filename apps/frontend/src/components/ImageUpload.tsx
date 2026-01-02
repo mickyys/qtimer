@@ -9,12 +9,14 @@ interface ImageUploadProps {
   onImageUpload: (imageUrl: string, publicId: string) => void;
   onError?: (error: string) => void;
   isLoading?: boolean;
+  eventId?: string;
 }
 
 export default function ImageUpload({
   onImageUpload,
   onError,
   isLoading = false,
+  eventId,
 }: ImageUploadProps) {
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -67,6 +69,25 @@ export default function ImageUpload({
       }
 
       const data = await response.json();
+
+      // If eventId is provided, update the event image directly
+      if (eventId) {
+        const updateResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/events/${eventId}/image`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ imageUrl: data.url }),
+          }
+        );
+
+        if (!updateResponse.ok) {
+          const error = await updateResponse.json();
+          throw new Error(error.error || "Error al actualizar la imagen del evento");
+        }
+      }
 
       // Crear preview desde la URL de Cloudinary
       setPreview(data.url);
