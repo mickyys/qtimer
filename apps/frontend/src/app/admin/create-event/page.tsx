@@ -55,7 +55,7 @@ export default function CreateEventPage() {
       }
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/events/create`,
+        `${process.env.NEXT_PUBLIC_API_URL}/events/create`,
         {
           method: "POST",
           headers: {
@@ -96,7 +96,7 @@ export default function CreateEventPage() {
     // Check if user is already authenticated by verifying the auth cookie
     const checkAuth = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/events`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/events`, {
           method: "GET",
           credentials: "include",
         });
