@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import ImageUpload from "@/components/ImageUpload";
 import { toast } from "sonner";
+import { validateSlugInput } from "@/utils/slugValidation";
 
 interface CreateEventFormProps {
   onSuccess?: () => void;
@@ -13,6 +14,7 @@ interface CreateEventFormProps {
 export default function CreateEventForm({ onSuccess }: CreateEventFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [nameError, setNameError] = useState<string>("");
   const [formData, setFormData] = useState({
     name: "",
     date: "",
@@ -29,6 +31,12 @@ export default function CreateEventForm({ onSuccess }: CreateEventFormProps) {
       ...prev,
       [name]: value,
     }));
+
+    // Validate slug when name changes
+    if (name === "name") {
+      const validation = validateSlugInput(value);
+      setNameError(validation.isValid ? "" : validation.message);
+    }
   };
 
   const handleImageUpload = (imageUrl: string, publicId: string) => {
@@ -46,6 +54,14 @@ export default function CreateEventForm({ onSuccess }: CreateEventFormProps) {
       // Validate form data - solo el nombre es obligatorio
       if (!formData.name.trim()) {
         toast.error("El nombre del evento es requerido");
+        setIsLoading(false);
+        return;
+      }
+
+      // Validate slug
+      const validation = validateSlugInput(formData.name);
+      if (!validation.isValid) {
+        toast.error(validation.message);
         setIsLoading(false);
         return;
       }
@@ -116,10 +132,15 @@ export default function CreateEventForm({ onSuccess }: CreateEventFormProps) {
           value={formData.name}
           onChange={handleChange}
           placeholder="Ej: Maratón Ciudad 2024"
-          className="w-full bg-slate-700 text-white border-slate-600 placeholder:text-slate-400 px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className={`w-full bg-slate-700 text-white border-slate-600 placeholder:text-slate-400 px-3 py-2 rounded-md border focus:outline-none focus:ring-2 ${
+            nameError ? "focus:ring-red-500 border-red-500" : "focus:ring-emerald-500"
+          }`}
           disabled={isLoading}
           required
         />
+        {nameError && (
+          <p className="mt-1 text-sm text-red-400">{nameError}</p>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -221,7 +242,7 @@ export default function CreateEventForm({ onSuccess }: CreateEventFormProps) {
       <div className="flex gap-4 pt-6">
         <Button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || !!nameError}
           className="flex-1 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-700"
         >
           {isLoading ? "Creando..." : "Crear Evento"}

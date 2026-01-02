@@ -126,48 +126,52 @@ export default function UploadModal({ isOpen, onClose, onSuccess, preSelectedEve
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-slate-700">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-2xl font-bold text-white">Subir Archivo de Resultados</h3>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-200">
+        {/* Header con gradiente */}
+        <div className="bg-gradient-to-r from-emerald-500 to-cyan-600 px-6 py-6 text-white flex justify-between items-center">
+          <h3 className="text-2xl font-bold">Subir Archivo de Resultados</h3>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition text-2xl"
+            className="p-1 hover:bg-white/20 rounded-full transition-colors disabled:opacity-50"
             disabled={isLoading}
           >
-            ×
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
-        <div className="space-y-6">
+        {/* Contenido principal */}
+        <div className="p-6 space-y-6">
           {/* Upload Mode Selection - Hide if pre-selected event */}
           {!preSelectedEventId && (
             <div>
-              <p className="text-slate-300 mb-3">¿Qué deseas hacer?</p>
-              <div className="flex gap-4">
-                <label className="flex items-center cursor-pointer">
+              <p className="text-slate-700 font-semibold mb-4">¿Qué deseas hacer?</p>
+              <div className="space-y-3">
+                <label className="flex items-center cursor-pointer p-3 border-2 border-emerald-200 rounded-xl hover:bg-emerald-50 transition">
                   <input
                     type="radio"
                     name="uploadMode"
                     value="new"
                     checked={uploadMode === "new"}
                     onChange={(e) => setUploadMode(e.target.value as "new" | "existing")}
-                    className="mr-2 text-emerald-500"
+                    className="w-4 h-4 accent-emerald-500"
                     disabled={isLoading}
                   />
-                  <span className="text-white">Crear evento nuevo desde archivo</span>
+                  <span className="text-slate-700 font-medium ml-3">Crear evento nuevo desde archivo</span>
                 </label>
-                <label className="flex items-center cursor-pointer">
+                <label className="flex items-center cursor-pointer p-3 border-2 border-emerald-200 rounded-xl hover:bg-emerald-50 transition">
                   <input
                     type="radio"
                     name="uploadMode"
                     value="existing"
                     checked={uploadMode === "existing"}
                     onChange={(e) => setUploadMode(e.target.value as "new" | "existing")}
-                    className="mr-2 text-emerald-500"
+                    className="w-4 h-4 accent-emerald-500"
                     disabled={isLoading}
                   />
-                  <span className="text-white">Cargar datos a evento existente</span>
+                  <span className="text-slate-700 font-medium ml-3">Cargar datos a evento existente</span>
                 </label>
               </div>
             </div>
@@ -176,17 +180,17 @@ export default function UploadModal({ isOpen, onClose, onSuccess, preSelectedEve
           {/* Event Selection for existing mode */}
           {uploadMode === "existing" && (
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-semibold text-slate-700 mb-3">
                 Seleccionar Evento
               </label>
               {eventsLoading ? (
-                <p className="text-slate-400">Cargando eventos...</p>
+                <p className="text-slate-500 text-center py-4">Cargando eventos...</p>
               ) : (
                 <select
                   value={selectedEventId}
                   onChange={(e) => setSelectedEventId(e.target.value)}
-                  className="w-full px-4 py-2 rounded-lg border border-slate-600 bg-slate-700 text-white
-                     focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-3 rounded-xl border-2 border-emerald-200 bg-white text-slate-700 font-medium
+                     focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
                   disabled={isLoading}
                 >
                   <option value="">Selecciona un evento...</option>
@@ -203,7 +207,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess, preSelectedEve
 
           {/* File Upload */}
           <div>
-            <p className="text-slate-400 mb-4">
+            <p className="text-slate-600 text-sm mb-4">
               {uploadMode === "new" 
                 ? "El archivo creará un nuevo evento con el nombre especificado en la primera línea."
                 : "El archivo reemplazará los datos del evento seleccionado."
@@ -214,44 +218,55 @@ export default function UploadModal({ isOpen, onClose, onSuccess, preSelectedEve
                 type="file"
                 onChange={handleFileChange}
                 accept=".racecheck"
-                className="block w-full text-sm text-slate-400
-                  file:mr-4 file:py-2 file:px-4
-                  file:rounded-lg file:border-0
-                  file:text-sm file:font-semibold
-                  file:bg-emerald-500 file:text-white
-                  hover:file:bg-emerald-600 transition"
+                className="block w-full text-sm text-slate-600
+                  file:mr-4 file:py-3 file:px-5
+                  file:rounded-xl file:border-0
+                  file:text-sm file:font-bold
+                  file:bg-gradient-to-r file:from-emerald-500 file:to-cyan-600
+                  file:text-white file:cursor-pointer
+                  hover:file:opacity-90 transition"
                 disabled={isLoading}
               />
+              {file && (
+                <div className="p-4 bg-emerald-50 border-2 border-emerald-200 rounded-xl">
+                  <p className="text-sm text-emerald-700 font-medium">
+                    📄 {file.name}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Feedback Message */}
           {feedback.message && (
-            <div className={`p-4 rounded-lg ${feedback.isError ? "bg-red-900/20 border border-red-500/30" : "bg-green-900/20 border border-green-500/30"}`}>
-              <p className={`text-sm ${feedback.isError ? "text-red-400" : "text-green-400"}`}>
+            <div className={`p-4 rounded-xl flex gap-3 ${feedback.isError ? "bg-red-50 border-2 border-red-200" : "bg-green-50 border-2 border-green-200"}`}>
+              <div className="text-lg">
+                {feedback.isError ? "⚠️" : "✅"}
+              </div>
+              <p className={`text-sm font-medium ${feedback.isError ? "text-red-700" : "text-green-700"}`}>
                 {feedback.message}
               </p>
             </div>
           )}
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 justify-end pt-4 border-t border-slate-600">
-            <button
-              onClick={onClose}
-              disabled={isLoading}
-              className="px-6 py-2.5 rounded-lg bg-slate-700 text-white hover:bg-slate-600 transition disabled:opacity-50"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handleFileUpload}
-              disabled={!file || isLoading || (uploadMode === "existing" && !selectedEventId)}
-              className="px-6 py-2.5 rounded-lg bg-emerald-500 text-white font-bold
-                 hover:bg-emerald-600 disabled:bg-slate-700 disabled:cursor-not-allowed transition"
-            >
-              {isLoading ? 'Subiendo...' : 'Subir Archivo'}
-            </button>
-          </div>
+        {/* Footer con botones */}
+        <div className="px-6 py-4 bg-slate-50 flex flex-col sm:flex-row gap-3 border-t border-slate-100">
+          <button
+            onClick={onClose}
+            disabled={isLoading}
+            className="flex-1 px-6 py-3 rounded-xl bg-slate-200 text-slate-700 hover:bg-slate-300 font-bold transition disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleFileUpload}
+            disabled={!file || isLoading || (uploadMode === "existing" && !selectedEventId)}
+            className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-600 text-white font-bold
+               hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-lg active:scale-95"
+          >
+            {isLoading ? '⏳ Subiendo...' : '📤 Subir Archivo'}
+          </button>
         </div>
       </div>
     </div>
