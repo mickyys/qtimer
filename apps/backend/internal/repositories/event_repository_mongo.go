@@ -228,15 +228,12 @@ func (r *mongoEventRepository) FindData(eventID primitive.ObjectID, name, chip, 
 				bson.M{"data.Dorsal": dorsalNum},
 				bson.M{"data.DORSAL": dorsalNum},
 				bson.M{"data.dorsal": dorsalNum},
-				bson.M{"data.Dorsal": bson.M{"$regex": *dorsal, "$options": "i"}},
-				bson.M{"data.DORSAL": bson.M{"$regex": *dorsal, "$options": "i"}},
-				bson.M{"data.dorsal": bson.M{"$regex": *dorsal, "$options": "i"}},
 			)
 		} else {
 			orConditions = append(orConditions,
-				bson.M{"data.Dorsal": bson.M{"$regex": *dorsal, "$options": "i"}},
-				bson.M{"data.DORSAL": bson.M{"$regex": *dorsal, "$options": "i"}},
-				bson.M{"data.dorsal": bson.M{"$regex": *dorsal, "$options": "i"}},
+				bson.M{"data.Dorsal": *dorsal},
+				bson.M{"data.DORSAL": *dorsal},
+				bson.M{"data.dorsal": *dorsal},
 			)
 		}
 	}
