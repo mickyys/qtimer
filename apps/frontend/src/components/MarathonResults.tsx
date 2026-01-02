@@ -113,7 +113,7 @@ export function MarathonResults({ eventSlug }: MarathonResultsProps) {
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
   const filterTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Debounce para búsquedas de texto (500ms)
+  // Debounce para búsquedas de texto (500ms después de cada número/letra)
   useEffect(() => {
     // Cancelar timeout anterior
     if (searchTimeoutRef.current) {
@@ -124,9 +124,10 @@ export function MarathonResults({ eventSlug }: MarathonResultsProps) {
       // Mostrar loading mientras se espera
       setLoading(true);
       
+      // Esperar 500ms después de cada número/letra ingresado
       searchTimeoutRef.current = setTimeout(() => {
         loadParticipantsWithFilters();
-      }, 500); // Esperar 500ms después de que el usuario deje de escribir
+      }, 500);
     }
 
     return () => {
