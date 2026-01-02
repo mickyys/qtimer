@@ -51,7 +51,7 @@ export default function EditEventPage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/events`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/events`, {
           method: "GET",
           credentials: "include",
         });
