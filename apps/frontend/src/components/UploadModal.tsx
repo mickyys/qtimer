@@ -102,7 +102,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess, preSelectedEve
       }
       
       // Use the message from the backend, or construct a default one
-      const feedbackMessage = result.message || 
+      const feedbackMessage = result.Message || 
         `Archivo subido con éxito! ID del Evento: ${result.EventID}. Registros insertados: ${result.RecordsInserted}.`;
       
       setFeedback({
