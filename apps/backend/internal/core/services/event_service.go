@@ -420,6 +420,8 @@ func (s *eventService) parseRaceCheckFile(file io.ReadSeeker, fileHash string) (
 	var allEventData []domain.EventData
 	var headers []string
 	var reprocessed bool
+	var lineNum int = 0
+	var recordsSkipped int = 0
 
 	// Maps para recopilar valores únicos
 	uniqueModalities := make(map[string]bool)
@@ -427,6 +429,7 @@ func (s *eventService) parseRaceCheckFile(file io.ReadSeeker, fileHash string) (
 
 	// First line: event name
 	if scanner.Scan() {
+		lineNum++
 		eventName := scanner.Text()
 		if eventName == "" {
 			return nil, errors.New("event name in header cannot be empty")
@@ -446,6 +449,7 @@ func (s *eventService) parseRaceCheckFile(file io.ReadSeeker, fileHash string) (
 
 	// Process remaining lines
 	for scanner.Scan() {
+		lineNum++
 		line := scanner.Text()
 
 		// Check if it's a race line (format: ;1|CAD 3G) - skip it
@@ -471,6 +475,7 @@ func (s *eventService) parseRaceCheckFile(file io.ReadSeeker, fileHash string) (
 		// Parse participant data
 		values := strings.Split(line, "|")
 		if len(values) != len(headers) {
+			recordsSkipped++
 			continue // Skip malformed data lines
 		}
 
@@ -499,6 +504,12 @@ func (s *eventService) parseRaceCheckFile(file io.ReadSeeker, fileHash string) (
 
 	if event == nil {
 		return nil, errors.New("could not parse event information from file")
+	}
+
+	// Log parsing information
+	fmt.Printf("[DEBUG] Parsed file: %d total lines, %d records extracted, %d records skipped\n", lineNum, len(allEventData), recordsSkipped)
+	if len(allEventData) == 0 {
+		fmt.Printf("[DEBUG] Warning: No records extracted. Event name: %s\n", event.Name)
 	}
 
 	// Convertir mapas de valores únicos a slices
@@ -638,6 +649,8 @@ func (s *eventService) parseRaceCheckFileForEvent(file io.ReadSeeker, fileHash s
 	scanner := bufio.NewScanner(file)
 	var allEventData []domain.EventData
 	var headers []string
+	var lineNum int = 0
+	var recordsSkipped int = 0
 
 	// Maps para recopilar valores únicos
 	uniqueModalities := make(map[string]bool)
@@ -645,11 +658,13 @@ func (s *eventService) parseRaceCheckFileForEvent(file io.ReadSeeker, fileHash s
 
 	// Skip first line (event name) since we're using existing event
 	if scanner.Scan() {
+		lineNum++
 		// Just skip the event name line
 	}
 
 	// Process remaining lines
 	for scanner.Scan() {
+		lineNum++
 		line := scanner.Text()
 
 		// Check if it's a race line (format: ;1|CAD 3G) - skip it
@@ -675,6 +690,7 @@ func (s *eventService) parseRaceCheckFileForEvent(file io.ReadSeeker, fileHash s
 		// Parse participant data
 		values := strings.Split(line, "|")
 		if len(values) != len(headers) {
+			recordsSkipped++
 			continue // Skip malformed data lines
 		}
 
@@ -713,6 +729,12 @@ func (s *eventService) parseRaceCheckFileForEvent(file io.ReadSeeker, fileHash s
 		categoriesSlice = append(categoriesSlice, category)
 	}
 	sort.Strings(categoriesSlice)
+
+	// Log parsing information
+	fmt.Printf("[DEBUG] Parsed file for event '%s': %d total lines, %d records extracted, %d records skipped\n", event.Name, lineNum, len(allEventData), recordsSkipped)
+	if len(allEventData) == 0 {
+		fmt.Printf("[DEBUG] Warning: No records extracted for event '%s'\n", event.Name)
+	}
 
 	// Asignar valores únicos y cantidad de registros al evento
 	event.UniqueModalities = modalitiesSlice
