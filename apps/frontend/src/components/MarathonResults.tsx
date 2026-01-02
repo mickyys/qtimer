@@ -54,6 +54,9 @@ interface MarathonResultsProps {
     fileExtension: string;
     status: string;
     createdAt: string;
+    uniqueModalities?: string[];
+    uniqueCategories?: string[];
+    recordsCount?: number;
   } | null;
 }
 
@@ -100,9 +103,14 @@ export function MarathonResults({ eventSlug, event }: MarathonResultsProps) {
 
 
 
-  // Obtener distancias y categorías únicas de los datos, ordenadas alfabéticamente
-  const distances = Array.from(new Set(participants.map(p => p.distance).filter(d => d !== 'N/A'))).sort();
-  const categories = Array.from(new Set(participants.map(p => p.category).filter(c => c !== 'N/A'))).sort();
+  // Obtener distancias y categorías del evento, o de los participantes como fallback
+  const distances = event?.uniqueModalities && event.uniqueModalities.length > 0 
+    ? event.uniqueModalities.map(m => capitalizeString(m)).sort()
+    : Array.from(new Set(participants.map(p => p.distance).filter(d => d !== 'N/A'))).sort();
+    
+  const categories = event?.uniqueCategories && event.uniqueCategories.length > 0 
+    ? event.uniqueCategories.map(c => capitalizeString(c)).sort()
+    : Array.from(new Set(participants.map(p => p.category).filter(c => c !== 'N/A'))).sort();
 
   // Función para cargar participantes con filtros
   const loadParticipantsWithFilters = useCallback(async () => {
