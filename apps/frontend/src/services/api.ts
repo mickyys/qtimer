@@ -271,11 +271,13 @@ interface ComparisonResponse {
 export const getParticipantComparison = async (
   eventSlug: string,
   participantBib: string,
-  distance: string
+  distance: string,
+  category: string
 ): Promise<ComparisonResponse> => {
   const params = new URLSearchParams();
   params.append("bib", participantBib);
   params.append("distance", distance);
+  params.append("category", category);
 
   const response = await fetch(
     `${API_URL}/events/${eventSlug}/participants/comparison?${params.toString()}`
