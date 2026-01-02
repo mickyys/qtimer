@@ -600,12 +600,15 @@ func (s *eventService) UploadToEvent(fileHeader *multipart.FileHeader, clientHas
 
 	// 3. Validate file extension
 	expectedExt := os.Getenv("RACECHECK_EXTENSION")
+	fmt.Printf("[DEBUG] Expected extension: %s, File extension: %s\n", expectedExt, filepath.Ext(fileHeader.Filename))
 	if filepath.Ext(fileHeader.Filename) != expectedExt {
+		fmt.Printf("[ERROR] Invalid file extension: %s\n", filepath.Ext(fileHeader.Filename))
 		return nil, ErrInvalidFileExtension
 	}
 
 	file, err := fileHeader.Open()
 	if err != nil {
+		fmt.Printf("[ERROR] Failed to open file: %v\n", err)
 		return nil, fmt.Errorf("could not open file: %w", err)
 	}
 	defer file.Close()
@@ -613,17 +616,22 @@ func (s *eventService) UploadToEvent(fileHeader *multipart.FileHeader, clientHas
 	// 4. Calculate file hash
 	hash := sha256.New()
 	if _, err := io.Copy(hash, file); err != nil {
+		fmt.Printf("[ERROR] Failed to calculate hash: %v\n", err)
 		return nil, fmt.Errorf("could not calculate file hash: %w", err)
 	}
 	calculatedHash := hex.EncodeToString(hash.Sum(nil))
+	fmt.Printf("[DEBUG] Calculated hash: %s\n", calculatedHash)
 
 	// 5. Compare hashes
 	if calculatedHash != clientHash {
+		fmt.Printf("[ERROR] Hash mismatch. Expected: %s, Got: %s\n", calculatedHash, clientHash)
 		return nil, ErrFileHashMismatch
 	}
 
 	// Check if file is the same as already uploaded
+	fmt.Printf("[DEBUG] Existing event FileHash: %s\n", existingEvent.FileHash)
 	if existingEvent.FileHash == calculatedHash {
+		fmt.Printf("[INFO] File hash matches existing event hash. No update needed.\n")
 		return &ports.UploadResult{
 			EventID:         existingEvent.ID.Hex(),
 			RecordsInserted: 0,
@@ -633,15 +641,19 @@ func (s *eventService) UploadToEvent(fileHeader *multipart.FileHeader, clientHas
 
 	// Rewind file for parsing
 	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		fmt.Printf("[ERROR] Failed to rewind file: %v\n", err)
 		return nil, fmt.Errorf("could not rewind file: %w", err)
 	}
 
 	// 6. Parse file with existing event
+	fmt.Printf("[DEBUG] Starting to parse file for existing event: %s (ID: %s)\n", existingEvent.Name, existingEvent.ID.Hex())
 	result, err := s.parseRaceCheckFileForEvent(file, calculatedHash, existingEvent)
 	if err != nil {
+		fmt.Printf("[ERROR] Failed to parse file: %v\n", err)
 		return nil, err
 	}
 
+	fmt.Printf("[DEBUG] Parse result: EventID=%s, RecordsInserted=%d, Reprocessed=%v\n", result.EventID, result.RecordsInserted, result.Reprocessed)
 	return result, nil
 }
 
