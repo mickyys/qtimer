@@ -101,8 +101,12 @@ export default function UploadModal({ isOpen, onClose, onSuccess, preSelectedEve
         result = await uploadFileToEvent(file, selectedEventId);
       }
       
+      // Use the message from the backend, or construct a default one
+      const feedbackMessage = result.Message || 
+        `Archivo subido con éxito! ID del Evento: ${result.EventID}. Registros insertados: ${result.RecordsInserted}.`;
+      
       setFeedback({
-        message: `Archivo subido con éxito! ID del Evento: ${result.EventID}. Registros insertados: ${result.RecordsInserted}. Reprocesado: ${result.Reprocessed ? 'Sí' : 'No'}.`,
+        message: feedbackMessage,
         isError: false
       });
       setFile(null);

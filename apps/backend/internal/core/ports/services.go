@@ -10,6 +10,7 @@ type UploadResult struct {
 	EventID         string `json:"eventId"`
 	RecordsInserted int    `json:"recordsInserted"`
 	Reprocessed     bool   `json:"reprocessed"`
+	Message         string `json:"message"`
 }
 
 type CreateEventRequest struct {

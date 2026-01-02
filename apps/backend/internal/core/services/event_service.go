@@ -542,6 +542,7 @@ func (s *eventService) parseRaceCheckFile(file io.ReadSeeker, fileHash string) (
 				EventID:         existingEvent.ID.Hex(),
 				RecordsInserted: 0,
 				Reprocessed:     false,
+				Message:         "El archivo es idéntico al archivo cargado anteriormente. No se realizaron cambios.",
 			}, nil
 		}
 
@@ -575,10 +576,22 @@ func (s *eventService) parseRaceCheckFile(file io.ReadSeeker, fileHash string) (
 		}
 	}
 
+	message := ""
+	if recordsInserted > 0 {
+		if reprocessed {
+			message = fmt.Sprintf("Archivo procesado exitosamente. %d registros insertados (actualización).", recordsInserted)
+		} else {
+			message = fmt.Sprintf("Archivo procesado exitosamente. Evento creado con %d registros.", recordsInserted)
+		}
+	} else if !reprocessed {
+		message = "Archivo cargado pero no contiene registros de participantes."
+	}
+
 	return &ports.UploadResult{
 		EventID:         event.ID.Hex(),
 		RecordsInserted: recordsInserted,
 		Reprocessed:     reprocessed,
+		Message:         message,
 	}, nil
 }
 
@@ -636,6 +649,7 @@ func (s *eventService) UploadToEvent(fileHeader *multipart.FileHeader, clientHas
 			EventID:         existingEvent.ID.Hex(),
 			RecordsInserted: 0,
 			Reprocessed:     false,
+			Message:         "El archivo es idéntico al archivo cargado anteriormente. No se realizaron cambios.",
 		}, nil
 	}
 
@@ -774,10 +788,12 @@ func (s *eventService) parseRaceCheckFileForEvent(file io.ReadSeeker, fileHash s
 			return nil, fmt.Errorf("could not save event data: %w", err)
 		}
 
+		message := fmt.Sprintf("Archivo procesado exitosamente. %d registros insertados (actualización).", recordsInserted)
 		return &ports.UploadResult{
 			EventID:         event.ID.Hex(),
 			RecordsInserted: recordsInserted,
 			Reprocessed:     true,
+			Message:         message,
 		}, nil
 	}
 
@@ -785,6 +801,7 @@ func (s *eventService) parseRaceCheckFileForEvent(file io.ReadSeeker, fileHash s
 		EventID:         event.ID.Hex(),
 		RecordsInserted: 0,
 		Reprocessed:     true,
+		Message:         "Archivo cargado pero no contiene registros de participantes.",
 	}, nil
 }
 

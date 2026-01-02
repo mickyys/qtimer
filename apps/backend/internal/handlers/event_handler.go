@@ -293,6 +293,31 @@ func (h *EventHandler) GetEvent(c *gin.Context) {
 	c.JSON(http.StatusOK, event)
 }
 
+func (h *EventHandler) GetEventBySlug(c *gin.Context) {
+	slug := c.Param("slug")
+	fmt.Printf("[INFO] GetEventBySlug called with slug: %s\n", slug)
+
+	if slug == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "slug is required"})
+		return
+	}
+
+	event, err := h.eventService.GetEventBySlug(slug)
+	if err != nil {
+		if err.Error() == "event not found" {
+			fmt.Printf("[WARNING] Event not found for slug: %s\n", slug)
+			c.JSON(http.StatusNotFound, gin.H{"error": "event not found"})
+		} else {
+			fmt.Printf("[ERROR] Error fetching event by slug %s: %v\n", slug, err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	fmt.Printf("[SUCCESS] Event found for slug: %s, Event ID: %s\n", slug, event.ID.Hex())
+	c.JSON(http.StatusOK, event)
+}
+
 func (h *EventHandler) UpdateEvent(c *gin.Context) {
 	eventID := c.Param("id")
 	var req ports.UpdateEventRequest

@@ -66,6 +66,7 @@ func main() {
 			events.POST("/:id/upload", eventHandler.UploadToEvent)
 			events.POST("/upload-image", eventHandler.UploadImageToCloudinary)
 			events.GET("", eventHandler.GetEvents)
+			events.GET("/slug/:slug", eventHandler.GetEventBySlug)
 			events.GET("/:id", eventHandler.GetEvent)
 			events.PUT("/:id", eventHandler.UpdateEvent)
 			events.DELETE("/:id", eventHandler.DeleteEvent)

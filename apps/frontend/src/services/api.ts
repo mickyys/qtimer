@@ -120,6 +120,7 @@ interface UploadResult {
   EventID: string;
   RecordsInserted: number;
   Reprocessed: boolean;
+  Message?: string;
 }
 
 export const uploadFile = async (file: File): Promise<UploadResult> => {
