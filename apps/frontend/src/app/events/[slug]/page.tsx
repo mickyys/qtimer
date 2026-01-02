@@ -24,6 +24,9 @@ interface Event {
   fileExtension: string;
   status: string;
   createdAt: string;
+  uniqueModalities?: string[];
+  uniqueCategories?: string[];
+  recordsCount?: number;
 }
 
 type Filters = {
