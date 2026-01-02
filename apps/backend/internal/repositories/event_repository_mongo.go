@@ -182,24 +182,22 @@ func (r *mongoEventRepository) FindData(eventID primitive.ObjectID, name, chip, 
 		)
 	}
 
-	// Para categoría, buscar en múltiples campos con case-insensitive
+	// Para categoría, buscar en múltiples campos con coincidencia exacta (case-insensitive)
 	if category != nil {
-		categoryRegex := bson.M{"$regex": *category, "$options": "i"}
 		orConditions = append(orConditions,
-			bson.M{"data.Categoría": categoryRegex},
-			bson.M{"data.CATEGORIA": categoryRegex},
-			bson.M{"data.category": categoryRegex},
-			bson.M{"data.categoria": categoryRegex},
+			bson.M{"data.Categoría": bson.M{"$regex": "^" + *category + "$", "$options": "i"}},
+			bson.M{"data.CATEGORIA": bson.M{"$regex": "^" + *category + "$", "$options": "i"}},
+			bson.M{"data.category": bson.M{"$regex": "^" + *category + "$", "$options": "i"}},
+			bson.M{"data.categoria": bson.M{"$regex": "^" + *category + "$", "$options": "i"}},
 		)
 	}
 
-	// Para distancia, buscar en múltiples campos con case-insensitive
+	// Para distancia, buscar en múltiples campos con coincidencia exacta (case-insensitive)
 	if distance != nil {
-		distanceRegex := bson.M{"$regex": *distance, "$options": "i"}
 		orConditions = append(orConditions,
-			bson.M{"data.MODALIDAD": distanceRegex},
-			bson.M{"data.distance": distanceRegex},
-			bson.M{"data.distancia": distanceRegex},
+			bson.M{"data.MODALIDAD": bson.M{"$regex": "^" + *distance + "$", "$options": "i"}},
+			bson.M{"data.distance": bson.M{"$regex": "^" + *distance + "$", "$options": "i"}},
+			bson.M{"data.distancia": bson.M{"$regex": "^" + *distance + "$", "$options": "i"}},
 		)
 	}
 
@@ -361,16 +359,28 @@ func (r *mongoEventRepository) UpdateStatus(id primitive.ObjectID, status string
 }
 
 // GetParticipantComparison obtiene el 1er lugar y los 5 participantes anteriores
-func (r *mongoEventRepository) GetParticipantComparison(eventID primitive.ObjectID, bib string, distance string) (*ports.ComparisonResult, error) {
+func (r *mongoEventRepository) GetParticipantComparison(eventID primitive.ObjectID, bib string, distance string, category string) (*ports.ComparisonResult, error) {
 	collection := r.getEventDataCollection()
 
-	// Filtro para obtener participantes de la misma distancia
+	// Filtro para obtener participantes de la misma distancia y categoría
 	distanceFilter := bson.M{
 		"eventId": eventID,
-		"$or": []bson.M{
-			bson.M{"data.MODALIDAD": bson.M{"$regex": distance, "$options": "i"}},
-			bson.M{"data.distance": bson.M{"$regex": distance, "$options": "i"}},
-			bson.M{"data.distancia": bson.M{"$regex": distance, "$options": "i"}},
+		"$and": []bson.M{
+			{
+				"$or": []bson.M{
+					bson.M{"data.MODALIDAD": bson.M{"$regex": "^" + distance + "$", "$options": "i"}},
+					bson.M{"data.distance": bson.M{"$regex": "^" + distance + "$", "$options": "i"}},
+					bson.M{"data.distancia": bson.M{"$regex": "^" + distance + "$", "$options": "i"}},
+				},
+			},
+			{
+				"$or": []bson.M{
+					bson.M{"data.CATEGORIA": bson.M{"$regex": "^" + category + "$", "$options": "i"}},
+					bson.M{"data.Categoría": bson.M{"$regex": "^" + category + "$", "$options": "i"}},
+					bson.M{"data.category": bson.M{"$regex": "^" + category + "$", "$options": "i"}},
+					bson.M{"data.categoria": bson.M{"$regex": "^" + category + "$", "$options": "i"}},
+				},
+			},
 		},
 	}
 

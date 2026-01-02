@@ -36,5 +36,5 @@ type EventRepository interface {
 	SaveAllData(data []domain.EventData) (int, error)
 	Find(name *string, date *time.Time, page int, limit int) (*FindEventsResult, error)
 	FindData(eventID primitive.ObjectID, name, chip, dorsal, category, distance, sex, position *string, page int, limit int) (*FindParticipantsResult, error)
-	GetParticipantComparison(eventID primitive.ObjectID, bib string, distance string) (*ComparisonResult, error)
+	GetParticipantComparison(eventID primitive.ObjectID, bib string, distance string, category string) (*ComparisonResult, error)
 }

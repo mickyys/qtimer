@@ -275,13 +275,15 @@ export function MarathonResults({ eventSlug, event }: MarathonResultsProps) {
 
   // Get surrounding participants for comparison
   const getSurroundingParticipants = (participant: ProcessedParticipant) => {
-    const sameDistance = participants.filter(p => p.distance === participant.distance);
-    const firstPlace = sameDistance[0];
+    const sameDistanceAndCategory = participants.filter(
+      p => p.distance === participant.distance && p.category === participant.category
+    );
+    const firstPlace = sameDistanceAndCategory[0];
     
     // Get 5 participants before the selected one
-    const participantIndex = sameDistance.findIndex(p => p.position === participant.position);
+    const participantIndex = sameDistanceAndCategory.findIndex(p => p.position === participant.position);
     const startIndex = Math.max(0, participantIndex - 5);
-    const previousParticipants = sameDistance.slice(startIndex, participantIndex);
+    const previousParticipants = sameDistanceAndCategory.slice(startIndex, participantIndex);
     
     return { firstPlace, previousParticipants };
   };
@@ -295,7 +297,8 @@ export function MarathonResults({ eventSlug, event }: MarathonResultsProps) {
       const comparisonData = await getParticipantComparison(
         eventSlug,
         participant.bib,
-        participant.distance
+        participant.distance,
+        participant.category
       );
 
       // Procesar los datos recibidos del servidor

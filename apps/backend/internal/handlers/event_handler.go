@@ -411,9 +411,10 @@ func (h *EventHandler) GetParticipantComparison(c *gin.Context) {
 	eventParam := c.Param("id")
 	bib := c.Query("bib")
 	distance := c.Query("distance")
+	category := c.Query("category")
 
-	if bib == "" || distance == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bib and distance parameters are required"})
+	if bib == "" || distance == "" || category == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bib, distance and category parameters are required"})
 		return
 	}
 
@@ -437,7 +438,7 @@ func (h *EventHandler) GetParticipantComparison(c *gin.Context) {
 		return
 	}
 
-	result, err := h.eventService.GetParticipantComparison(eventID, bib, distance)
+	result, err := h.eventService.GetParticipantComparison(eventID, bib, distance, category)
 	if err != nil {
 		if errors.Is(err, services.ErrInvalidObjectID) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
