@@ -81,7 +81,7 @@ func (cs *CloudinaryService) UploadImage(ctx context.Context, fileHeader *multip
 		ResourceType: resourceType,
 	}
 
-	result, err := cs.client.Upload.Upload(ctx, fileBuffer.Bytes(), uploadParams)
+	result, err := cs.client.Upload.Upload(ctx, fileBuffer, uploadParams)
 	if err != nil {
 		return nil, fmt.Errorf("cloudinary upload failed: %w", err)
 	}
