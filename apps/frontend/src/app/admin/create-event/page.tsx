@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import ImageUpload from "@/components/ImageUpload";
+import Logo from "@/components/Logo";
 
 export default function CreateEventPage() {
   const router = useRouter();
@@ -189,19 +190,7 @@ export default function CreateEventPage() {
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center">
-                <span className="text-white font-bold text-sm">QT</span>
-              </div>
-              <div>
-                <h1 className="text-gray-900 text-xl">
-                  QuintaTimer Admin
-                </h1>
-                <p className="text-gray-600 text-sm">
-                  Crear nuevo evento
-                </p>
-              </div>
-            </div>
+            <Logo />
             <button 
               onClick={() => router.push("/admin/dashboard")}
               className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
