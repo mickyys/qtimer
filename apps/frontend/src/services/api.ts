@@ -37,7 +37,9 @@ export const getEvents = async (
     throw new Error("Failed to fetch events");
   }
 
-  return response.json();
+  const data = await response.json();
+  console.log("API Response from getEvents:", data);
+  return data;
 };
 
 interface Participant {

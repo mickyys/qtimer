@@ -49,6 +49,9 @@ export default function EditEventPage() {
 
   // Authentication check
   useEffect(() => {
+    console.log("Checking authentication...", eventId);
+    console.log("Event ID:", eventId);
+    console.log("API URL:", `${process.env.NEXT_PUBLIC_API_URL}/events`);
     const checkAuth = async () => {
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/events`, {
@@ -56,6 +59,7 @@ export default function EditEventPage() {
           credentials: "include",
         });
         
+        console.log("Auth check response:", response);
         if (response.ok) {
           setIsAuthenticated(true);
           loadEvent();
@@ -133,7 +137,8 @@ export default function EditEventPage() {
     }));
   };
 
-  const handleImageUpload = (imageUrl: string) => {
+  const handleImageUpload = (imageUrl: string, publicId: string) => {
+    console.log("Image uploaded:", imageUrl, publicId);
     setFormData(prev => ({
       ...prev,
       imageUrl
@@ -141,6 +146,7 @@ export default function EditEventPage() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log("Submitting form data:", formData);
     e.preventDefault();
     setIsSubmitting(true);
     setError("");
@@ -362,7 +368,7 @@ export default function EditEventPage() {
               </label>
               <ImageUpload 
                 onImageUpload={handleImageUpload}
-                eventId={eventId}
+                initialImageUrl={formData.imageUrl}
               />
             </div>
 

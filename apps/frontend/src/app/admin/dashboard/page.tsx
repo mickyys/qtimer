@@ -239,6 +239,7 @@ export default function AdminDashboard() {
     setError("");
     try {
       const response = await getEvents("", "", 1, 100); // Get first 100 events
+      console.log("Loaded events:", response.events);
       setEvents(response.events);
     } catch (err) {
       setError("Error al cargar los eventos");
@@ -249,6 +250,7 @@ export default function AdminDashboard() {
   };
 
   const handleEdit = (eventId: string) => {
+    console.log("Edit button clicked, eventId:", eventId);
     router.push(`/admin/edit-event/${eventId}`);
   };
 

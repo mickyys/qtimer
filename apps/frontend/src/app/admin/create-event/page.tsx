@@ -35,7 +35,7 @@ export default function CreateEventPage() {
     }));
   };
 
-  const handleImageUpload = (imageUrl: string) => {
+  const handleImageUpload = (imageUrl: string, publicId: string) => {
     setFormData(prev => ({
       ...prev,
       imageUrl

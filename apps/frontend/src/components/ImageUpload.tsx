@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { Upload, X } from "lucide-react";
@@ -9,19 +9,27 @@ interface ImageUploadProps {
   onImageUpload: (imageUrl: string, publicId: string) => void;
   onError?: (error: string) => void;
   isLoading?: boolean;
-  eventId?: string;
+  initialImageUrl?: string;
 }
 
 export default function ImageUpload({
   onImageUpload,
   onError,
   isLoading = false,
-  eventId,
+  initialImageUrl,
 }: ImageUploadProps) {
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const dragOverRef = useRef(false);
+
+  // Cargar imagen inicial si existe
+  useEffect(() => {
+    if (initialImageUrl) {
+      setPreview(initialImageUrl);
+      setFileName("Imagen cargada");
+    }
+  }, [initialImageUrl]);
 
   const validateFile = (file: File): boolean => {
     const maxSize = 10 * 1024 * 1024; // 10 MB
@@ -55,6 +63,8 @@ export default function ImageUpload({
       const formData = new FormData();
       formData.append("file", file);
 
+      console.log("Uploading file to:", `${process.env.NEXT_PUBLIC_API_URL}/events/upload-image`);
+      
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/events/upload-image`,
         {
@@ -63,30 +73,27 @@ export default function ImageUpload({
         }
       );
 
+      console.log("Upload response status:", response.status);
+      console.log("Upload response ok:", response.ok);
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Error al subir la imagen");
+        let error = "Error al subir la imagen";
+        try {
+          const errorData = await response.json();
+          error = errorData.error || error;
+          console.error("Server error:", errorData);
+        } catch (e) {
+          console.error("Could not parse error response:", e);
+        }
+        throw new Error(error);
       }
 
       const data = await response.json();
+      console.log("Upload successful, data:", data);
 
-      // If eventId is provided, update the event image directly
-      if (eventId) {
-        const updateResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/events/${eventId}/image`,
-          {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ imageUrl: data.url }),
-          }
-        );
-
-        if (!updateResponse.ok) {
-          const error = await updateResponse.json();
-          throw new Error(error.error || "Error al actualizar la imagen del evento");
-        }
+      // Validar que tenemos los datos necesarios
+      if (!data.url || !data.publicId) {
+        throw new Error("La respuesta del servidor no contiene los datos esperados (url o publicId)");
       }
 
       // Crear preview desde la URL de Cloudinary
@@ -101,6 +108,7 @@ export default function ImageUpload({
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Error al subir la imagen";
+      console.error("Upload error:", errorMessage, error);
       toast.dismiss(loadingToast);
       toast.error(errorMessage);
       onError?.(errorMessage);
@@ -187,9 +195,13 @@ export default function ImageUpload({
               <p className="text-xs text-gray-500 mt-1">
                 JPG, PNG, WebP o GIF (máx. 10 MB)
               </p>
+              <p className="text-xs text-gray-500">
+                Se recomienda: 1920 x 1080 px
+              </p>
             </div>
 
             <button
+              type="button"
               onClick={() => inputRef.current?.click()}
               disabled={uploading || isLoading}
               className="mt-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
@@ -221,6 +233,7 @@ export default function ImageUpload({
               </div>
 
               <button
+                type="button"
                 onClick={handleRemoveImage}
                 disabled={uploading || isLoading}
                 className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
