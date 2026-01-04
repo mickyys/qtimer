@@ -7,10 +7,27 @@ import (
 	"time"
 )
 
+// FileStatus defines the processing status of a file.
+type FileStatus string
+
+const (
+	// StatusPending means the file is new or modified and waiting to be processed.
+	StatusPending FileStatus = "Pending"
+	// StatusProcessing means the file is currently being processed.
+	StatusProcessing FileStatus = "Processing"
+	// StatusFailed means the file processing failed after all retries.
+	StatusFailed FileStatus = "Failed"
+	// StatusCompleted means the file was successfully processed and moved.
+	StatusCompleted FileStatus = "Completed"
+)
+
 // FileState represents the state of a single file.
 type FileState struct {
-	Hash    string    `json:"hash"`
-	LastSent time.Time `json:"last_sent"`
+	Hash       string     `json:"hash"`
+	LastUpdate time.Time  `json:"last_update"`
+	Status     FileStatus `json:"status"`
+	RetryCount int        `json:"retry_count"`
+	Error      string     `json:"error,omitempty"`
 }
 
 // State represents the overall state of the agent.
@@ -86,4 +103,46 @@ func (s *State) SetFileState(filepath string, state FileState) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.Files[filepath] = state
+}
+
+// GetFilesByStatus returns a map of file paths that match the given status.
+func (s *State) GetFilesByStatus(status FileStatus) map[string]FileState {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	files := make(map[string]FileState)
+	for path, fileState := range s.Files {
+		if fileState.Status == status {
+			files[path] = fileState
+		}
+	}
+	return files
+}
+
+// UpdateFileStatus updates the status of a file, along with an optional error message.
+func (s *State) UpdateFileStatus(filepath string, status FileStatus, err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if fileState, ok := s.Files[filepath]; ok {
+		fileState.Status = status
+		fileState.LastUpdate = time.Now().UTC()
+		if err != nil {
+			fileState.Error = err.Error()
+		} else {
+			fileState.Error = "" // Clear error on success
+		}
+		s.Files[filepath] = fileState
+	}
+}
+
+// IncrementRetryCount increments the retry counter for a file.
+func (s *State) IncrementRetryCount(filepath string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if fileState, ok := s.Files[filepath]; ok {
+		fileState.RetryCount++
+		s.Files[filepath] = fileState
+	}
 }

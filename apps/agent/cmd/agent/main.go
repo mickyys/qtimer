@@ -6,26 +6,33 @@ import (
 	"agent/internal/processor"
 	"agent/internal/sender"
 	"agent/internal/state"
+	"agent/internal/utils"
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/kardianos/service"
 )
 
 type program struct {
-	exit       chan struct{}
-	cfg        *config.Config
-	appState   *state.State
-	configPath string
-	logPath    string
-	statePath  string
+	exit             chan struct{}
+	cfg              *config.Config
+	appState         *state.State
+	configPath       string
+	logPath          string
+	statePath        string
+	processingFiles  map[string]bool
+	processingMutex  sync.Mutex
+	wg               sync.WaitGroup
 }
 
 func (p *program) Start(s service.Service) error {
 	p.exit = make(chan struct{})
+	p.processingFiles = make(map[string]bool)
 	go p.run()
 	return nil
 }
@@ -54,9 +61,11 @@ func (p *program) run() {
 	for {
 		select {
 		case <-ticker.C:
-			runCheck(p.cfg, p.appState, p.statePath)
+			p.scanAndProcessFiles()
 		case <-p.exit:
 			ticker.Stop()
+			// Wait for any running jobs to finish
+			p.wg.Wait()
 			return
 		}
 	}
@@ -70,12 +79,11 @@ func (p *program) Stop(s service.Service) error {
 		}
 	}
 	close(p.exit)
-	logger.Close() // Close the log file
+	logger.Close()
 	return nil
 }
 
 func main() {
-	// Determine paths relative to the executable
 	ex, err := os.Executable()
 	if err != nil {
 		log.Fatalf("Failed to get executable path: %v", err)
@@ -113,48 +121,120 @@ func main() {
 	}
 }
 
-func runCheck(cfg *config.Config, appState *state.State, statePath string) {
-	logger.Info.Println("Running directory check...")
+func (p *program) scanAndProcessFiles() {
+	logger.Info.Println("Scanning for new or modified files...")
 
-	// Get a copy of the current file states to avoid holding a lock during processing
-	fileStates := appState.GetFileStatesCopy()
-
-	modifiedFiles, err := processor.ProcessDirectory(cfg.DirectoryToWatch, fileStates)
+	// First, update file states based on directory scan
+	err := processor.UpdateFileStates(p.cfg.DirectoryToWatch, p.appState)
 	if err != nil {
-		logger.Error.Printf("Error processing directory: %v", err)
+		logger.Error.Printf("Error scanning directory: %v", err)
 		return
 	}
 
-	if len(modifiedFiles) == 0 {
-		logger.Info.Println("No modified files detected.")
+	filesToProcess := p.appState.GetFilesByStatus(state.StatusPending)
+	if len(filesToProcess) == 0 {
+		logger.Info.Println("No pending files to process.")
 		return
 	}
 
-	logger.Info.Printf("Found %d modified files. Sending...", len(modifiedFiles))
-	successfulSends := 0
-	timeout := time.Duration(cfg.HTTPTimeoutSeconds) * time.Second
-	for file, hash := range modifiedFiles {
-		// Create a new context for each file sending task.
-		// In a more complex scenario, this context could be tied to the application's lifecycle.
-		ctx := context.Background()
-		err := sender.SendFile(ctx, file, cfg.Endpoint, timeout)
-		if err != nil {
-			logger.Error.Printf("Failed to send file %s: %v", file, err)
-		} else {
-			// Update the state only after a successful send
-			appState.SetFileState(file, state.FileState{
-				Hash:     hash,
-				LastSent: time.Now().UTC(),
-			})
-			successfulSends++
+	logger.Info.Printf("Found %d pending files. Starting processing...", len(filesToProcess))
+
+	for filePath := range filesToProcess {
+		p.processingMutex.Lock()
+		if !p.processingFiles[filePath] {
+			p.processingFiles[filePath] = true
+			p.wg.Add(1)
+			go p.processFileWrapper(filePath)
 		}
+		p.processingMutex.Unlock()
 	}
 
-	// Save the state only if there were successful sends
-	if successfulSends > 0 {
-		if err := appState.SaveState(statePath); err != nil {
-			logger.Error.Printf("Failed to save state: %v", err)
-		}
+	// Wait for all spawned goroutines to complete
+	p.wg.Wait()
+	logger.Info.Println("Processing cycle finished.")
+
+	// Save the state after a full processing cycle
+	if err := p.appState.SaveState(p.statePath); err != nil {
+		logger.Error.Printf("Failed to save state after processing cycle: %v", err)
 	}
-	logger.Info.Println("Check finished.")
+}
+
+func (p *program) processFileWrapper(filePath string) {
+	defer func() {
+		p.wg.Done()
+		p.processingMutex.Lock()
+		delete(p.processingFiles, filePath)
+		p.processingMutex.Unlock()
+	}()
+
+	// Update status to Processing
+	p.appState.UpdateFileStatus(filePath, state.StatusProcessing, nil)
+	logger.Info.Printf("Processing %s", filePath)
+
+	var err error
+	for i := 0; i < p.cfg.MaxRetries; i++ {
+		err = p.processFile(filePath)
+		if err == nil {
+			break // Success
+		}
+		logger.Error.Printf("Attempt %d/%d failed for %s: %v", i+1, p.cfg.MaxRetries, filePath, err)
+		p.appState.IncrementRetryCount(filePath)
+
+		// Wait before retrying
+		time.Sleep(time.Duration(p.cfg.RetryDelaySeconds) * time.Second)
+	}
+
+	if err != nil {
+		logger.Error.Printf("All retries failed for %s. Moving to error directory.", filePath)
+		p.appState.UpdateFileStatus(filePath, state.StatusFailed, err)
+		errDir := p.cfg.ErrorDirectory
+		if moveErr := utils.MoveFile(filePath, errDir, true); moveErr != nil {
+			logger.Error.Printf("Failed to move file %s to error directory: %v", filePath, moveErr)
+		}
+		return
+	}
+
+	logger.Info.Printf("Successfully processed %s. Moving to completed directory.", filePath)
+	p.appState.UpdateFileStatus(filePath, state.StatusCompleted, nil)
+	completedDir := p.cfg.CompletedDirectory
+	if moveErr := utils.MoveFile(filePath, completedDir, true); moveErr != nil {
+		logger.Error.Printf("Failed to move file %s to completed directory: %v", filePath, moveErr)
+	}
+}
+
+// processFile contains the core logic for processing a single file.
+func (p *program) processFile(filePath string) error {
+	logger.Info.Printf("Starting process for file: %s", filePath)
+
+	// Create a context with a timeout for the entire operation
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(p.cfg.HTTPTimeoutSeconds)*time.Second)
+	defer cancel()
+
+	// Step 1: Initial Upload
+	logger.Info.Printf("Step 1: Initial upload for %s", filePath)
+	uploadResp, err := sender.InitialUpload(ctx, filePath, p.cfg.InitialUploadEndpoint, time.Duration(p.cfg.HTTPTimeoutSeconds)*time.Second)
+	if err != nil {
+		return fmt.Errorf("initial upload failed: %w", err)
+	}
+	logger.Info.Printf("Initial upload successful for %s. Upload ID: %s", filePath, uploadResp.UploadID)
+
+	// Step 2: Query Event
+	logger.Info.Printf("Step 2: Querying event for Upload ID %s", uploadResp.UploadID)
+	eventResp, err := sender.QueryEvent(ctx, p.cfg.EventQueryEndpoint, uploadResp.UploadID, time.Duration(p.cfg.HTTPTimeoutSeconds)*time.Second)
+	if err != nil {
+		return fmt.Errorf("event query failed: %w", err)
+	}
+	logger.Info.Printf("Event query successful. Event ID: %s", eventResp.EventID)
+
+	// Step 3: Final Upload
+	logger.Info.Printf("Step 3: Final upload for %s to Event ID %s", filePath, eventResp.EventID)
+	err = sender.FinalUpload(ctx, filePath, p.cfg.FinalUploadEndpoint, eventResp.EventID, time.Duration(p.cfg.HTTPTimeoutSeconds)*time.Second)
+	if err != nil {
+		return fmt.Errorf("final upload failed: %w", err)
+	}
+	logger.Info.Printf("Final upload successful for %s", filePath)
+
+	// If all steps are successful, the file will be moved in the wrapper function.
+	logger.Info.Printf("Successfully processed file: %s", filePath)
+	return nil
 }
