@@ -72,11 +72,11 @@ export default function ParticipantDetailModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md" onClick={handleClose}>
       <div 
-        className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto" 
+        className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-scroll" 
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-red-600 to-red-700 px-6 py-6 text-white flex justify-between items-start">
+        <div className="bg-gradient-to-r from-red-600 to-red-700 py-6 text-white flex justify-between items-start px-6">
           <div className="flex-1">
             <h2 className="text-2xl font-bold">{participant.name}</h2>
             <p className="text-red-100 mt-1">{participant.category}</p>
@@ -169,7 +169,7 @@ export default function ParticipantDetailModal({
                 {/* Previous 5 Participants */}
                 {prevParticipants.length > 0 && (
                   <>
-                    <div className="pt-3 pb-2">
+                    <div className="pt-2 pb-1">
                       <p className="text-gray-600 text-sm font-semibold">Corredores anteriores</p>
                     </div>
                     {prevParticipants.map((p, index) => (

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getEvents, deleteEvent, updateEventStatus } from "@/services/api";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import UploadModal from "@/components/UploadModal";
+import Logo from "@/components/Logo";
 
 interface Event {
   id: string;
@@ -239,6 +240,7 @@ export default function AdminDashboard() {
     setError("");
     try {
       const response = await getEvents("", "", 1, 100); // Get first 100 events
+      console.log("Loaded events:", response.events);
       setEvents(response.events);
     } catch (err) {
       setError("Error al cargar los eventos");
@@ -249,6 +251,7 @@ export default function AdminDashboard() {
   };
 
   const handleEdit = (eventId: string) => {
+    console.log("Edit button clicked, eventId:", eventId);
     router.push(`/admin/edit-event/${eventId}`);
   };
 
@@ -416,19 +419,7 @@ export default function AdminDashboard() {
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center">
-                <span className="text-white font-bold text-sm">QT</span>
-              </div>
-              <div>
-                <h1 className="text-gray-900 text-xl">
-                  QuintaTimer Admin
-                </h1>
-                <p className="text-gray-600 text-sm">
-                  Panel de administración
-                </p>
-              </div>
-            </div>
+            <Logo />
             <button 
               onClick={() => router.push("/events")}
               className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"

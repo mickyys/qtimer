@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Filter, Trophy, Medal, Award, ChevronDown, X, MapPin, Calendar, Timer, TrendingUp, User } from 'lucide-react';
 import { getParticipantsBySlug, getParticipantComparison } from '../services/api';
 import ParticipantDetailModal from './ParticipantDetailModal';
+import Logo from './Logo';
 
 interface Participant {
   id: string;
@@ -61,6 +62,7 @@ interface MarathonResultsProps {
 }
 
 export function MarathonResults({ eventSlug, event }: MarathonResultsProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   
   const [selectedDistance, setSelectedDistance] = useState<string>('all');
@@ -389,6 +391,15 @@ export function MarathonResults({ eventSlug, event }: MarathonResultsProps) {
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between mb-4">
+            <Logo />
+            <button
+              onClick={() => router.back()}
+              className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+            >
+              ← Volver
+            </button>
+          </div>
           <h1 className="text-gray-900">Resultados de {event?.name || 'Maratón'}</h1>
           <p className="text-gray-600 mt-2">Consulta los resultados y posiciones de los participantes</p>
         </div>
