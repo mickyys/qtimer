@@ -1,11 +1,7 @@
 name: Build Agent Installer
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'apps/agent/**'
+  workflow_dispatch:
 
 jobs:
   build:
