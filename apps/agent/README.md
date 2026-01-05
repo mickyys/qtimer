@@ -1,20 +1,69 @@
 # Go Agent
 
-This agent is a cross-platform (Windows and macOS) application that monitors a directory for file changes, calculates SHA256 hashes of files, and sends modified files to an HTTP endpoint.
+This agent is a cross-platform (Windows and macOS) application designed to run as a resilient, continuous background service. It monitors a directory for new or modified files and processes them through a multi-step, fault-tolerant workflow.
 
-## Workflow
+## Core Responsibilities
 
-1.  **Initialization**: The agent starts by loading its configuration from `config/config.json`, initializing the logger to write to `logs/app.log`, and loading the last known state from `state.json`.
+- **Directory Monitoring**: The agent periodically scans a configured directory for file changes, using SHA256 hashes to detect modifications.
+- **Multi-Step Processing**: For each new or modified file, the agent initiates a concurrent, multi-step process:
+    1.  **Initial Upload**: The file is sent to a preliminary API endpoint.
+    2.  **Event Query**: The agent queries a second endpoint to determine which event the file is associated with.
+    3.  **Final Upload**: The file is sent to a final endpoint, correctly associated with its event.
+- **Fault Tolerance**: If any step in the process fails, the agent will retry up to a configurable number of times with a delay between attempts.
+- **File Management**:
+    -   Successfully processed files are moved to a `completed` directory.
+    -   Files that fail after all retry attempts are moved to an `error` directory.
+- **State Persistence**: The agent maintains a `state.json` file to track the status (`Pending`, `Processing`, `Completed`, `Failed`), retry count, and last error for each file, ensuring it can resume operations safely after a restart.
+- **Resilience**: It is built using the `kardianos/service` library, allowing it to be installed as a system service that starts automatically on boot.
 
-2.  **Periodic Checks**: Every `check_interval_seconds` (as defined in the configuration), the agent scans the `directory_to_watch`.
+## Workflow Sequence Diagram
 
-3.  **Hashing and Comparison**: For each file in the directory, the agent calculates its SHA256 hash. This hash is compared with the hash stored in the agent's state.
+The following diagram illustrates the complete workflow for a single file:
 
-4.  **File Sending**: If a file's hash is new or has changed, the agent sends the file to the configured `endpoint`.
+```mermaid
+sequenceDiagram
+    participant Agent as Agent Service (Ticker)
+    participant Processor as Directory Processor
+    participant State as State (state.json)
+    participant FileHandler as File Handler (Goroutine)
+    participant API as Backend API
+    participant FileSystem as File System
 
-5.  **State Persistence**: The agent's state, which includes the hashes of all files, is saved to `state.json` after each check. This ensures that the agent can resume its work without losing track of file states even after a system restart.
+    loop Periodic Scan
+        Agent->>Processor: Scan Directory
+        Processor->>FileSystem: Read directory and calculate file hashes
+        Processor->>State: Get current file states
+        alt File is new or hash has changed
+            Processor->>State: Update file status to 'Pending'
+        end
+    end
 
-6.  **Graceful Shutdown**: The agent listens for `SIGINT` and `SIGTERM` signals to perform a graceful shutdown, ensuring that the current state is saved before exiting.
+    loop Concurrent Processing
+        Agent->>FileHandler: Start goroutine for each 'Pending' file
+        FileHandler->>State: Set file status to 'Processing'
+        loop Retry Logic (up to max_retries)
+            FileHandler->>API: 1. Initial Upload
+            API-->>FileHandler: Returns Upload ID
+            FileHandler->>API: 2. Query Event (with Upload ID)
+            API-->>FileHandler: Returns Event ID
+            FileHandler->>API: 3. Final Upload (with Event ID)
+            API-->>FileHandler: Success confirmation
+
+            opt on API failure
+                FileHandler->>State: Increment retry count, log error
+                Note over FileHandler: Wait for retry_delay
+            end
+        end
+
+        alt Process successful
+            FileHandler->>FileSystem: Move file to 'completed' directory
+            FileHandler->>State: Set file status to 'Completed'
+        else Process failed after all retries
+            FileHandler->>FileSystem: Move file to 'error' directory
+            FileHandler->>State: Set file status to 'Failed'
+        end
+    end
+```
 
 ## Compilation Instructions
 
