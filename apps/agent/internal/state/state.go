@@ -136,6 +136,23 @@ func (s *State) UpdateFileStatus(filepath string, status FileStatus, err error) 
 	}
 }
 
+// RequeueProcessingFiles changes the status of any 'Processing' files back to 'Pending'.
+// This is useful for handling agent restarts.
+func (s *State) RequeueProcessingFiles() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	requeuedCount := 0
+	for path, fileState := range s.Files {
+		if fileState.Status == StatusProcessing {
+			fileState.Status = StatusPending
+			s.Files[path] = fileState
+			requeuedCount++
+		}
+	}
+	return requeuedCount
+}
+
 // IncrementRetryCount increments the retry counter for a file.
 func (s *State) IncrementRetryCount(filepath string) {
 	s.mu.Lock()

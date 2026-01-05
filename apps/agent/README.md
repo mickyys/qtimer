@@ -1,24 +1,21 @@
 # Go Agent
 
-This agent is a cross-platform (Windows and macOS) application designed to run as a resilient, continuous background service. It monitors a directory for new or modified files and processes them through a multi-step, fault-tolerant workflow.
+This agent is a cross-platform (Windows and macOS) application designed to run as a resilient, continuous background service. It monitors a directory for new or modified files and uploads them to a backend endpoint.
 
 ## Core Responsibilities
 
 - **Directory Monitoring**: The agent periodically scans a configured directory for file changes, using SHA256 hashes to detect modifications.
-- **Multi-Step Processing**: For each new or modified file, the agent initiates a concurrent, multi-step process:
-    1.  **Initial Upload**: The file is sent to a preliminary API endpoint.
-    2.  **Event Query**: The agent queries a second endpoint to determine which event the file is associated with.
-    3.  **Final Upload**: The file is sent to a final endpoint, correctly associated with its event.
-- **Fault Tolerance**: If any step in the process fails, the agent will retry up to a configurable number of times with a delay between attempts.
+- **File Upload**: For each new or modified file, the agent initiates a concurrent upload process. It sends the file content along with its SHA256 hash in a single `multipart/form-data` request to a configurable API endpoint.
+- **Fault Tolerance**: If the upload fails, the agent will retry up to a configurable number of times with a delay between attempts.
 - **File Management**:
-    -   Successfully processed files are moved to a `completed` directory.
+    -   Successfully uploaded files are moved to a `completed` directory.
     -   Files that fail after all retry attempts are moved to an `error` directory.
-- **State Persistence**: The agent maintains a `state.json` file to track the status (`Pending`, `Processing`, `Completed`, `Failed`), retry count, and last error for each file, ensuring it can resume operations safely after a restart.
+- **State Persistence**: The agent maintains a `state.json` file to track the status of each file. This ensures that it can resume operations safely after a restart, automatically re-queuing any jobs that were interrupted.
 - **Resilience**: It is built using the `kardianos/service` library, allowing it to be installed as a system service that starts automatically on boot.
 
 ## Workflow Sequence Diagram
 
-The following diagram illustrates the complete workflow for a single file:
+The following diagram illustrates the simplified workflow for a single file:
 
 ```mermaid
 sequenceDiagram
@@ -42,11 +39,7 @@ sequenceDiagram
         Agent->>FileHandler: Start goroutine for each 'Pending' file
         FileHandler->>State: Set file status to 'Processing'
         loop Retry Logic (up to max_retries)
-            FileHandler->>API: 1. Initial Upload
-            API-->>FileHandler: Returns Upload ID
-            FileHandler->>API: 2. Query Event (with Upload ID)
-            API-->>FileHandler: Returns Event ID
-            FileHandler->>API: 3. Final Upload (with Event ID)
+            FileHandler->>API: Upload file and hash
             API-->>FileHandler: Success confirmation
 
             opt on API failure
@@ -111,14 +104,14 @@ The agent expects the following directory structure:
 
 Edit the `config/config.json` file to match your environment.
 
+**Note:** The backend service uses the filename to associate the uploaded data with an event. Ensure that the files in the `directory_to_watch` have names that correspond to events previously created in the system by an administrator.
+
 ```json
 {
   "directory_to_watch": "/path/to/your/files",
   "completed_directory": "/path/to/completed/files",
   "error_directory": "/path/to/error/files",
-  "initial_upload_endpoint": "http://localhost:8080/upload/initial",
-  "event_query_endpoint": "http://localhost:8080/upload/query-event",
-  "final_upload_endpoint": "http://localhost:8080/upload/final",
+  "upload_endpoint": "http://localhost:8080/events/upload",
   "check_interval_seconds": 60,
   "http_timeout_seconds": 15,
   "max_retries": 5,
@@ -129,9 +122,7 @@ Edit the `config/config.json` file to match your environment.
 - `directory_to_watch`: The absolute path to the folder the agent should monitor for new files.
 - `completed_directory`: The absolute path where successfully processed files will be moved.
 - `error_directory`: The absolute path where files that failed processing will be moved.
-- `initial_upload_endpoint`: The API endpoint for the first step of the upload process.
-- `event_query_endpoint`: The API endpoint for querying the event ID.
-- `final_upload_endpoint`: The API endpoint for the final file upload.
+- `upload_endpoint`: The API endpoint for the file upload.
 - `check_interval_seconds`: How often (in seconds) the agent scans the directory for changes.
 - `http_timeout_seconds`: The timeout (in seconds) for each HTTP request to the API.
 - `max_retries`: The maximum number of times the agent will retry a failed processing step.

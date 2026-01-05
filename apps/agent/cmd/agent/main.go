@@ -55,6 +55,15 @@ func (p *program) run() {
 		logger.Error.Fatalf("Failed to load state: %v", err)
 	}
 
+	// Re-queue any files that were in 'Processing' state during the last shutdown
+	requeuedCount := p.appState.RequeueProcessingFiles()
+	if requeuedCount > 0 {
+		logger.Info.Printf("Re-queued %d files that were in a 'Processing' state.", requeuedCount)
+		if err := p.appState.SaveState(p.statePath); err != nil {
+			logger.Error.Printf("Failed to save state after re-queuing files: %v", err)
+		}
+	}
+
 	ticker := time.NewTicker(time.Duration(p.cfg.CheckIntervalSeconds) * time.Second)
 	defer ticker.Stop()
 
@@ -204,37 +213,25 @@ func (p *program) processFileWrapper(filePath string) {
 
 // processFile contains the core logic for processing a single file.
 func (p *program) processFile(filePath string) error {
-	logger.Info.Printf("Starting process for file: %s", filePath)
+	logger.Info.Printf("Starting upload for file: %s", filePath)
 
-	// Create a context with a timeout for the entire operation
+	// Get the file's hash from the state
+	fileState, ok := p.appState.GetFileState(filePath)
+	if !ok {
+		return fmt.Errorf("could not find state for file %s", filePath)
+	}
+	hash := fileState.Hash
+
+	// Create a context with a timeout for the operation
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(p.cfg.HTTPTimeoutSeconds)*time.Second)
 	defer cancel()
 
-	// Step 1: Initial Upload
-	logger.Info.Printf("Step 1: Initial upload for %s", filePath)
-	uploadResp, err := sender.InitialUpload(ctx, filePath, p.cfg.InitialUploadEndpoint, time.Duration(p.cfg.HTTPTimeoutSeconds)*time.Second)
+	// Upload the file and its hash
+	err := sender.UploadFile(ctx, filePath, p.cfg.UploadEndpoint, hash, time.Duration(p.cfg.HTTPTimeoutSeconds)*time.Second)
 	if err != nil {
-		return fmt.Errorf("initial upload failed: %w", err)
+		return fmt.Errorf("upload failed: %w", err)
 	}
-	logger.Info.Printf("Initial upload successful for %s. Upload ID: %s", filePath, uploadResp.UploadID)
 
-	// Step 2: Query Event
-	logger.Info.Printf("Step 2: Querying event for Upload ID %s", uploadResp.UploadID)
-	eventResp, err := sender.QueryEvent(ctx, p.cfg.EventQueryEndpoint, uploadResp.UploadID, time.Duration(p.cfg.HTTPTimeoutSeconds)*time.Second)
-	if err != nil {
-		return fmt.Errorf("event query failed: %w", err)
-	}
-	logger.Info.Printf("Event query successful. Event ID: %s", eventResp.EventID)
-
-	// Step 3: Final Upload
-	logger.Info.Printf("Step 3: Final upload for %s to Event ID %s", filePath, eventResp.EventID)
-	err = sender.FinalUpload(ctx, filePath, p.cfg.FinalUploadEndpoint, eventResp.EventID, time.Duration(p.cfg.HTTPTimeoutSeconds)*time.Second)
-	if err != nil {
-		return fmt.Errorf("final upload failed: %w", err)
-	}
-	logger.Info.Printf("Final upload successful for %s", filePath)
-
-	// If all steps are successful, the file will be moved in the wrapper function.
-	logger.Info.Printf("Successfully processed file: %s", filePath)
+	logger.Info.Printf("Successfully uploaded file: %s", filePath)
 	return nil
 }
