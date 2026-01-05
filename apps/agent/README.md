@@ -88,3 +88,45 @@ go build -o agent.exe cmd/agent/main.go
 ```
 
 This will create an executable file named `agent.exe` in the `apps/agent` directory.
+
+## Installation as a System Service
+
+Once the agent is compiled, it can be installed as a system service to ensure it runs automatically on boot. These commands typically require administrative privileges (e.g., run as Administrator on Windows or with `sudo` on macOS).
+
+From the `apps/agent` directory where the executable is located:
+
+- **Install the service:**
+  ```sh
+  # On macOS
+  sudo ./agent install
+
+  # On Windows
+  .\agent.exe install
+  ```
+
+- **Start the service:**
+  ```sh
+  # On macOS
+  sudo ./agent start
+
+  # On Windows
+  .\agent.exe start
+  ```
+
+- **Stop the service:**
+  ```sh
+  # On macOS
+  sudo ./agent stop
+
+  # On Windows
+  .\agent.exe stop
+  ```
+
+- **Uninstall the service:**
+  ```sh
+  # On macOS
+  sudo ./agent uninstall
+
+  # On Windows
+  .\agent.exe uninstall
+  ```
