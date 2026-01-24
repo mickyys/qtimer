@@ -44,6 +44,7 @@ type EventService interface {
 	DeleteEvent(id string) error
 	UpdateEventStatus(id string, status string) (*domain.Event, error)
 	GetEvents(name *string, date *time.Time, page int, limit int) (*FindEventsResult, error)
+	GetEventsWithFilter(name *string, date *time.Time, page int, limit int, includeHidden bool) (*FindEventsResult, error)
 	GetParticipants(eventID string, name, chip, dorsal, category, distance, sex, position *string, page int, limit int) (*FindParticipantsResult, error)
 	GetParticipantComparison(eventID string, bib string, distance string, category string) (*ComparisonResult, error)
 }

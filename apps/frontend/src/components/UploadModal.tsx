@@ -58,7 +58,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess, preSelectedEve
   const loadEvents = async () => {
     setEventsLoading(true);
     try {
-      const response = await getEvents("", "", 1, 100);
+      const response = await getEvents("", "", 1, 100, true); // Include HIDDEN events in admin
       setEvents(response.events.map(event => ({
         id: event.id,
         name: event.name,

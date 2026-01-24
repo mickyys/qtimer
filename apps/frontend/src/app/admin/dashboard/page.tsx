@@ -239,7 +239,7 @@ export default function AdminDashboard() {
     setIsLoading(true);
     setError("");
     try {
-      const response = await getEvents("", "", 1, 100); // Get first 100 events
+      const response = await getEvents("", "", 1, 100, true); // Get first 100 events including HIDDEN
       console.log("Loaded events:", response.events);
       setEvents(response.events);
     } catch (err) {
