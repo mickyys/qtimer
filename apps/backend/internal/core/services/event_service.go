@@ -249,6 +249,10 @@ func (s *eventService) Upload(fileHeader *multipart.FileHeader, clientHash strin
 }
 
 func (s *eventService) GetEvents(name *string, date *time.Time, page int, limit int) (*ports.FindEventsResult, error) {
+	return s.GetEventsWithFilter(name, date, page, limit, false)
+}
+
+func (s *eventService) GetEventsWithFilter(name *string, date *time.Time, page int, limit int, includeHidden bool) (*ports.FindEventsResult, error) {
 	if page <= 0 {
 		page = 1
 	}
@@ -259,6 +263,17 @@ func (s *eventService) GetEvents(name *string, date *time.Time, page int, limit 
 	result, err := s.eventRepository.Find(name, date, page, limit)
 	if err != nil {
 		return nil, fmt.Errorf("could not get events: %w", err)
+	}
+
+	// Filter out HIDDEN events from public view unless includeHidden is true
+	if !includeHidden && result != nil && result.Events != nil {
+		filteredEvents := make([]*domain.Event, 0)
+		for _, event := range result.Events {
+			if event.Status != "HIDDEN" {
+				filteredEvents = append(filteredEvents, event)
+			}
+		}
+		result.Events = filteredEvents
 	}
 
 	return result, nil

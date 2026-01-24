@@ -23,13 +23,15 @@ export const getEvents = async (
   name: string,
   date: string,
   page: number,
-  limit: number = 20
+  limit: number = 20,
+  includeHidden: boolean = false
 ): Promise<EventsResponse> => {
   const params = new URLSearchParams();
   if (name) params.append("name", name);
   if (date) params.append("date", date);
   params.append("page", page.toString());
   params.append("limit", limit.toString());
+  if (includeHidden) params.append("includeHidden", "true");
 
   const response = await fetch(`${API_URL}/events?${params.toString()}`);
 

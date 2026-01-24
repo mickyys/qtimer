@@ -89,6 +89,7 @@ func (h *EventHandler) GetEvents(c *gin.Context) {
 	dateStr := c.Query("date")
 	pageStr := c.Query("page")
 	limitStr := c.Query("limit")
+	includeHiddenStr := c.Query("includeHidden")
 
 	var date *time.Time
 	if dateStr != "" {
@@ -124,8 +125,11 @@ func (h *EventHandler) GetEvents(c *gin.Context) {
 		namePtr = &name
 	}
 
+	// Parse includeHidden parameter
+	includeHidden := includeHiddenStr == "true"
+
 	// 2. Call service
-	result, err := h.eventService.GetEvents(namePtr, date, page, limit)
+	result, err := h.eventService.GetEventsWithFilter(namePtr, date, page, limit, includeHidden)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
