@@ -8,10 +8,14 @@ import (
 
 // Config holds the application configuration.
 type Config struct {
-	DirectoryToWatch    string `json:"directory_to_watch"`
-	Endpoint            string `json:"endpoint"`
+	DirectoryToWatch     string `json:"directory_to_watch"`
+	CompletedDirectory   string `json:"completed_directory"`
+	ErrorDirectory       string `json:"error_directory"`
+	UploadEndpoint       string `json:"upload_endpoint"`
 	CheckIntervalSeconds int    `json:"check_interval_seconds"`
 	HTTPTimeoutSeconds   int    `json:"http_timeout_seconds"`
+	MaxRetries           int    `json:"max_retries"`
+	RetryDelaySeconds    int    `json:"retry_delay_seconds"`
 }
 
 // LoadConfig reads the configuration from the given path.

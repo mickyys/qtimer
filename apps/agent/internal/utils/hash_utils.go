@@ -7,9 +7,9 @@ import (
 	"os"
 )
 
-// CalculateSHA256 calculates the SHA256 hash of a file.
-func CalculateSHA256(filepath string) (string, error) {
-	file, err := os.Open(filepath)
+// CalculateSHA256 calcula el hash SHA256 de un archivo.
+func CalculateSHA256(filePath string) (string, error) {
+	file, err := os.Open(filePath)
 	if err != nil {
 		return "", err
 	}

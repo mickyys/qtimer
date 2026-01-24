@@ -16,7 +16,7 @@ import (
 func SendFile(ctx context.Context, filePath, endpoint, fileHash string, timeout time.Duration) error {
 	file, err := os.Open(filePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open file: %w", err)
 	}
 	defer file.Close()
 
@@ -26,11 +26,10 @@ func SendFile(ctx context.Context, filePath, endpoint, fileHash string, timeout 
 	// Add file
 	part, err := writer.CreateFormFile("file", filepath.Base(filePath))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create form file: %w", err)
 	}
-	_, err = io.Copy(part, file)
-	if err != nil {
-		return err
+	if _, err = io.Copy(part, file); err != nil {
+		return fmt.Errorf("failed to copy file to buffer: %w", err)
 	}
 
 	// Add hash field
@@ -42,21 +41,21 @@ func SendFile(ctx context.Context, filePath, endpoint, fileHash string, timeout 
 
 	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, body)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
-	client := &http.Client{
-		Timeout: timeout,
-	}
+	client := &http.Client{Timeout: timeout}
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("http request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to send file %s, received status code: %d", filePath, resp.StatusCode)
+		// Leer el cuerpo de la respuesta para obtener más detalles del error, si es posible
+		responseBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("received non-OK status code: %d. Response: %s", resp.StatusCode, string(responseBody))
 	}
 
 	return nil
