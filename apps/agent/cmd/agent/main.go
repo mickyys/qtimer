@@ -137,7 +137,7 @@ func runCheck(cfg *config.Config, appState *state.State, statePath string) {
 		// Create a new context for each file sending task.
 		// In a more complex scenario, this context could be tied to the application's lifecycle.
 		ctx := context.Background()
-		err := sender.SendFile(ctx, file, cfg.Endpoint, timeout)
+		err := sender.SendFile(ctx, file, cfg.Endpoint, hash, timeout)
 		if err != nil {
 			logger.Error.Printf("Failed to send file %s: %v", file, err)
 		} else {

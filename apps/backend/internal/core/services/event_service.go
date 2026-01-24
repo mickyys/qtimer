@@ -210,13 +210,35 @@ func (s *eventService) Upload(fileHeader *multipart.FileHeader, clientHash strin
 		return nil, ErrFileHashMismatch
 	}
 
+	// 4. Check if an event with this file hash already exists
+	existingEvent, err := s.eventRepository.FindByFileHash(calculatedHash)
+	if err != nil {
+		return nil, fmt.Errorf("could not check for existing event by hash: %w", err)
+	}
+
+	if existingEvent != nil {
+		// Event with this exact file already exists, no need to reprocess
+		return &ports.UploadResult{
+			EventID:         existingEvent.ID.Hex(),
+			RecordsInserted: 0,
+			Reprocessed:     false,
+			Message:         "El archivo es idéntico al archivo cargado anteriormente. No se realizaron cambios.",
+		}, nil
+	}
+
+	// 5. Check if an event with this filename already exists (event created but not processed yet)
+	existingEventByFileName, err := s.eventRepository.FindByFileName(fileHeader.Filename)
+	if err != nil {
+		return nil, fmt.Errorf("could not check for existing event by filename: %w", err)
+	}
+
 	// Rewind file for parsing
 	if _, err := file.Seek(0, io.SeekStart); err != nil {
 		return nil, fmt.Errorf("could not rewind file: %w", err)
 	}
 
-	// 4. Parse file with new format
-	result, err := s.parseRaceCheckFile(file, calculatedHash)
+	// 6. Parse file with new format
+	result, err := s.parseRaceCheckFile(file, calculatedHash, existingEventByFileName)
 	if err != nil {
 		return nil, err
 	}
@@ -442,7 +464,7 @@ func (s *eventService) UpdateEventStatus(id string, status string) (*domain.Even
 	return event, nil
 }
 
-func (s *eventService) parseRaceCheckFile(file io.ReadSeeker, fileHash string) (*ports.UploadResult, error) {
+func (s *eventService) parseRaceCheckFile(file io.ReadSeeker, fileHash string, existingEventByFileName *domain.Event) (*ports.UploadResult, error) {
 	scanner := bufio.NewScanner(file)
 	var event *domain.Event
 	var allEventData []domain.EventData
@@ -558,36 +580,58 @@ func (s *eventService) parseRaceCheckFile(file io.ReadSeeker, fileHash string) (
 	event.UniqueCategories = categoriesSlice
 	event.RecordsCount = len(allEventData)
 
-	// Check for existing event
-	existingEvent, err := s.eventRepository.FindByName(event.Name)
-	if err != nil {
-		return nil, fmt.Errorf("could not check for existing event: %w", err)
-	}
-
-	if existingEvent != nil {
-		if existingEvent.FileHash == fileHash {
-			return &ports.UploadResult{
-				EventID:         existingEvent.ID.Hex(),
-				RecordsInserted: 0,
-				Reprocessed:     false,
-				Message:         "El archivo es idéntico al archivo cargado anteriormente. No se realizaron cambios.",
-			}, nil
-		}
-
+	// Priority 1: Use existing event if it was passed by fileName
+	if existingEventByFileName != nil {
 		reprocessed = true
-		event.ID = existingEvent.ID
+		event.ID = existingEventByFileName.ID
+		event.CreatedAt = existingEventByFileName.CreatedAt
+		event.Status = existingEventByFileName.Status
+		event.Date = existingEventByFileName.Date
+		event.Time = existingEventByFileName.Time
+		event.Address = existingEventByFileName.Address
+		event.ImageURL = existingEventByFileName.ImageURL
+		event.Slug = existingEventByFileName.Slug
 
 		// Delete old data
-		if err := s.eventRepository.DeleteEventData(existingEvent.ID); err != nil {
+		if err := s.eventRepository.DeleteEventData(existingEventByFileName.ID); err != nil {
 			return nil, fmt.Errorf("could not delete old event data: %w", err)
 		}
-		if err := s.eventRepository.UpdateFileStats(existingEvent.ID, fileHash, modalitiesSlice, categoriesSlice, len(allEventData)); err != nil {
+		if err := s.eventRepository.UpdateFileStats(existingEventByFileName.ID, fileHash, modalitiesSlice, categoriesSlice, len(allEventData)); err != nil {
 			return nil, fmt.Errorf("could not update event stats: %w", err)
 		}
 	} else {
-		event.ID = primitive.NewObjectID()
-		if err := s.eventRepository.Save(event); err != nil {
-			return nil, fmt.Errorf("could not save new event: %w", err)
+		// Priority 2: Check for existing event by name (backward compatibility)
+		existingEvent, lookupErr := s.eventRepository.FindByName(event.Name)
+		if lookupErr != nil {
+			return nil, fmt.Errorf("could not check for existing event: %w", lookupErr)
+		}
+
+		if existingEvent != nil {
+			if existingEvent.FileHash == fileHash {
+				return &ports.UploadResult{
+					EventID:         existingEvent.ID.Hex(),
+					RecordsInserted: 0,
+					Reprocessed:     false,
+					Message:         "El archivo es idéntico al archivo cargado anteriormente. No se realizaron cambios.",
+				}, nil
+			}
+
+			reprocessed = true
+			event.ID = existingEvent.ID
+
+			// Delete old data
+			if err := s.eventRepository.DeleteEventData(existingEvent.ID); err != nil {
+				return nil, fmt.Errorf("could not delete old event data: %w", err)
+			}
+			if err := s.eventRepository.UpdateFileStats(existingEvent.ID, fileHash, modalitiesSlice, categoriesSlice, len(allEventData)); err != nil {
+				return nil, fmt.Errorf("could not update event stats: %w", err)
+			}
+		} else {
+			// Priority 3: Create new event
+			event.ID = primitive.NewObjectID()
+			if err := s.eventRepository.Save(event); err != nil {
+				return nil, fmt.Errorf("could not save new event: %w", err)
+			}
 		}
 	}
 
@@ -598,6 +642,7 @@ func (s *eventService) parseRaceCheckFile(file io.ReadSeeker, fileHash string) (
 
 	var recordsInserted int
 	if len(allEventData) > 0 {
+		var err error
 		recordsInserted, err = s.eventRepository.SaveAllData(allEventData)
 		if err != nil {
 			return nil, fmt.Errorf("could not save event data: %w", err)

@@ -12,8 +12,8 @@ import (
 	"time"
 )
 
-// SendFile sends a file to the specified endpoint.
-func SendFile(ctx context.Context, filePath, endpoint string, timeout time.Duration) error {
+// SendFile sends a file to the specified endpoint with its hash.
+func SendFile(ctx context.Context, filePath, endpoint, fileHash string, timeout time.Duration) error {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return err
@@ -22,6 +22,8 @@ func SendFile(ctx context.Context, filePath, endpoint string, timeout time.Durat
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
+
+	// Add file
 	part, err := writer.CreateFormFile("file", filepath.Base(filePath))
 	if err != nil {
 		return err
@@ -30,6 +32,12 @@ func SendFile(ctx context.Context, filePath, endpoint string, timeout time.Durat
 	if err != nil {
 		return err
 	}
+
+	// Add hash field
+	if err := writer.WriteField("hash", fileHash); err != nil {
+		return err
+	}
+
 	writer.Close()
 
 	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, body)

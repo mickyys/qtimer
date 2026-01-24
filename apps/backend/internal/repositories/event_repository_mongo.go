@@ -82,6 +82,30 @@ func (r *mongoEventRepository) FindBySlug(slug string) (*domain.Event, error) {
 	return &event, nil
 }
 
+func (r *mongoEventRepository) FindByFileHash(hash string) (*domain.Event, error) {
+	var event domain.Event
+	err := r.getEventCollection().FindOne(context.Background(), bson.M{"fileHash": hash}).Decode(&event)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &event, nil
+}
+
+func (r *mongoEventRepository) FindByFileName(fileName string) (*domain.Event, error) {
+	var event domain.Event
+	err := r.getEventCollection().FindOne(context.Background(), bson.M{"fileName": fileName}).Decode(&event)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &event, nil
+}
+
 func (r *mongoEventRepository) UpdateFileHash(id primitive.ObjectID, hash string) error {
 	_, err := r.getEventCollection().UpdateOne(
 		context.Background(),
