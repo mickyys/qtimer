@@ -238,7 +238,9 @@ func (s *eventService) Upload(fileHeader *multipart.FileHeader, clientHash strin
 	}
 
 	// 6. Parse file with new format
-	result, err := s.parseRaceCheckFile(file, calculatedHash, existingEventByFileName)
+	// Remove extension from filename for storage
+	fileNameWithoutExt := strings.TrimSuffix(fileHeader.Filename, filepath.Ext(fileHeader.Filename))
+	result, err := s.parseRaceCheckFile(file, calculatedHash, existingEventByFileName, fileNameWithoutExt, filepath.Ext(fileHeader.Filename))
 	if err != nil {
 		return nil, err
 	}
@@ -464,7 +466,7 @@ func (s *eventService) UpdateEventStatus(id string, status string) (*domain.Even
 	return event, nil
 }
 
-func (s *eventService) parseRaceCheckFile(file io.ReadSeeker, fileHash string, existingEventByFileName *domain.Event) (*ports.UploadResult, error) {
+func (s *eventService) parseRaceCheckFile(file io.ReadSeeker, fileHash string, existingEventByFileName *domain.Event, fileName string, fileExtension string) (*ports.UploadResult, error) {
 	scanner := bufio.NewScanner(file)
 	var event *domain.Event
 	var allEventData []domain.EventData
@@ -485,15 +487,26 @@ func (s *eventService) parseRaceCheckFile(file io.ReadSeeker, fileHash string, e
 			return nil, errors.New("event name in header cannot be empty")
 		}
 
+		// Remove race prefix if present (format: "1|EVENT_NAME" -> "EVENT_NAME")
+		if idx := strings.Index(eventName, "|"); idx != -1 {
+			eventName = strings.TrimSpace(eventName[idx+1:])
+		}
+
+		if eventName == "" {
+			return nil, errors.New("event name in header cannot be empty")
+		}
+
 		// Generate slug from event name
 		slug := utils.GenerateSlug(eventName)
 
 		event = &domain.Event{
-			Name:     eventName,
-			Slug:     slug,
-			FileHash: fileHash,
-			Date:     time.Now(),
-			Status:   "PUBLISHED",
+			Name:          eventName,
+			Slug:          slug,
+			FileHash:      fileHash,
+			FileName:      fileName,
+			FileExtension: fileExtension,
+			Date:          time.Now(),
+			Status:        "PUBLISHED",
 		}
 	}
 
