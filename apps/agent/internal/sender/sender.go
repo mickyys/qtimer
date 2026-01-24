@@ -12,8 +12,8 @@ import (
 	"time"
 )
 
-// UploadFile envía un archivo y su hash a un endpoint.
-func UploadFile(ctx context.Context, filePath, endpoint, hash string, timeout time.Duration) error {
+// SendFile sends a file to the specified endpoint with its hash.
+func SendFile(ctx context.Context, filePath, endpoint, fileHash string, timeout time.Duration) error {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to open file: %w", err)
@@ -23,12 +23,7 @@ func UploadFile(ctx context.Context, filePath, endpoint, hash string, timeout ti
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
-	// Añadir el campo hash
-	if err := writer.WriteField("hash", hash); err != nil {
-		return fmt.Errorf("failed to write hash field: %w", err)
-	}
-
-	// Añadir el archivo
+	// Add file
 	part, err := writer.CreateFormFile("file", filepath.Base(filePath))
 	if err != nil {
 		return fmt.Errorf("failed to create form file: %w", err)
@@ -36,6 +31,12 @@ func UploadFile(ctx context.Context, filePath, endpoint, hash string, timeout ti
 	if _, err = io.Copy(part, file); err != nil {
 		return fmt.Errorf("failed to copy file to buffer: %w", err)
 	}
+
+	// Add hash field
+	if err := writer.WriteField("hash", fileHash); err != nil {
+		return err
+	}
+
 	writer.Close()
 
 	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, body)

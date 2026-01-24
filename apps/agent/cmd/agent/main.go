@@ -19,15 +19,15 @@ import (
 )
 
 type program struct {
-	exit             chan struct{}
-	cfg              *config.Config
-	appState         *state.State
-	configPath       string
-	logPath          string
-	statePath        string
-	processingFiles  map[string]bool
-	processingMutex  sync.Mutex
-	wg               sync.WaitGroup
+	exit            chan struct{}
+	cfg             *config.Config
+	appState        *state.State
+	configPath      string
+	logPath         string
+	statePath       string
+	processingFiles map[string]bool
+	processingMutex sync.Mutex
+	wg              sync.WaitGroup
 }
 
 func (p *program) Start(s service.Service) error {
@@ -146,16 +146,21 @@ func (p *program) scanAndProcessFiles() {
 		return
 	}
 
-	logger.Info.Printf("Found %d pending files. Starting processing...", len(filesToProcess))
+	logger.Info.Printf("Found %d pending files. Processing...", len(filesToProcess))
 
+	// Process each file asynchronously
 	for filePath := range filesToProcess {
 		p.processingMutex.Lock()
-		if !p.processingFiles[filePath] {
-			p.processingFiles[filePath] = true
-			p.wg.Add(1)
-			go p.processFileWrapper(filePath)
+		// Avoid processing the same file multiple times concurrently
+		if p.processingFiles[filePath] {
+			p.processingMutex.Unlock()
+			continue
 		}
+		p.processingFiles[filePath] = true
 		p.processingMutex.Unlock()
+
+		p.wg.Add(1)
+		go p.processFileWrapper(filePath)
 	}
 
 	// Wait for all spawned goroutines to complete
@@ -227,7 +232,7 @@ func (p *program) processFile(filePath string) error {
 	defer cancel()
 
 	// Upload the file and its hash
-	err := sender.UploadFile(ctx, filePath, p.cfg.UploadEndpoint, hash, time.Duration(p.cfg.HTTPTimeoutSeconds)*time.Second)
+	err := sender.SendFile(ctx, filePath, p.cfg.UploadEndpoint, hash, time.Duration(p.cfg.HTTPTimeoutSeconds)*time.Second)
 	if err != nil {
 		return fmt.Errorf("upload failed: %w", err)
 	}

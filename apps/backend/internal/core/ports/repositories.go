@@ -27,6 +27,8 @@ type EventRepository interface {
 	FindByName(name string) (*domain.Event, error)
 	FindBySlug(slug string) (*domain.Event, error)
 	FindByID(id primitive.ObjectID) (*domain.Event, error)
+	FindByFileHash(hash string) (*domain.Event, error)
+	FindByFileName(fileName string) (*domain.Event, error)
 	Update(id primitive.ObjectID, event *domain.Event) error
 	Delete(id primitive.ObjectID) error
 	UpdateStatus(id primitive.ObjectID, status string) error
