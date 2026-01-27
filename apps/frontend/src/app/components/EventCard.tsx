@@ -30,7 +30,7 @@ export function EventCard({
   const hasOverflow = distances.length > INITIAL_SHOW;
 
   return (
-    <div className="bg-white rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 max-w-sm">
+    <div className="bg-white rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 max-w-sm flex flex-col h-full">
       {/* Image Section */}
       <div className="relative h-48 overflow-hidden">
         {imageUrl ? (
@@ -58,7 +58,7 @@ export function EventCard({
       </div>
 
       {/* Content */}
-      <div className="p-6">
+      <div className="p-6 flex flex-col flex-1">
         <h3 className="text-gray-900 mb-2">{title}</h3>
 
         {/* Distances */}
@@ -107,7 +107,7 @@ export function EventCard({
           )}
         </div>
 
-        <div className="pt-4 border-t border-gray-200">
+        <div className="mt-auto pt-4 border-t border-gray-200">
           <button
             onClick={onViewResults}
             className="w-full bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors duration-200"
