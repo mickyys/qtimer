@@ -468,10 +468,7 @@ func (r *mongoEventRepository) GetParticipantComparison(eventID primitive.Object
 	}
 
 	// Obtener el 1er lugar (siempre es el primero)
-	firstPlaceBib := getBibValue(allParticipants[0].Data)
-
-	// Si el 1er lugar no está en los 5 anteriores, agregarlo
-	if _, exists := previousParticipantsSet[firstPlaceBib]; !exists {
+	if len(allParticipants) > 0 {
 		result.FirstPlace = allParticipants[0]
 	}
 
