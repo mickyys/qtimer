@@ -41,10 +41,8 @@ const mapBackendEventToFrontend = (backendEvent: any): FrontendEvent => {
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   
   let status = 'Próximamente';
-  if (eventDate < todayStart) {
-    status = 'Finalizado';
-  } else if (eventDate.getTime() === todayStart.getTime()) {
-    status = 'En curso';
+  if (eventDate <= todayStart) {
+    status = '';
   }
   
   return {
