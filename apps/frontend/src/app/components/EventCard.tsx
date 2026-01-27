@@ -1,4 +1,5 @@
-import { Calendar, MapPin, Clock, Users } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState } from 'react';
 
 interface EventCardProps {
   title: string;
@@ -23,6 +24,7 @@ export function EventCard({
   participants,
   onViewResults
 }: EventCardProps) {
+  const [expandedDistances, setExpandedDistances] = useState(false);
   return (
     <div className="bg-white rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 max-w-sm">
       {/* Image Section */}
@@ -41,11 +43,6 @@ export function EventCard({
             </div>
           </div>
         )}
-        <div className="absolute top-4 left-4">
-          <span className="bg-red-600 text-white px-3 py-1 rounded-full text-sm">
-            {status}
-          </span>
-        </div>
         {participants !== undefined && participants > 0 && (
           <div className="absolute top-4 right-4">
             <span className="bg-black/70 text-white px-3 py-1 rounded-full text-sm flex items-center gap-1">
@@ -63,12 +60,30 @@ export function EventCard({
         </h3>
         
         {/* Distances */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          {distances.map((distance, index) => (
-            <span key={index} className="bg-red-100 text-red-700 px-2 py-1 rounded text-sm">
-              {distance}
-            </span>
-          ))}
+        <div className="mb-4">
+          <div className="flex flex-wrap gap-2 mb-2">
+            {(expandedDistances ? distances : distances.slice(0, 1)).map((distance, index) => (
+              <span key={index} className="bg-red-100 text-red-700 px-2 py-1 rounded text-sm">
+                {distance}
+              </span>
+            ))}
+          </div>
+          {distances.length > 1 && (
+            <button
+              onClick={() => setExpandedDistances(!expandedDistances)}
+              className="text-red-600 hover:text-red-700 text-sm font-medium flex items-center gap-1"
+            >
+              {expandedDistances ? (
+                <>
+                  Ver menos <ChevronUp className="w-4 h-4" />
+                </>
+              ) : (
+                <>
+                  Ver más ({distances.length - 1}) <ChevronDown className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Event Details */}
