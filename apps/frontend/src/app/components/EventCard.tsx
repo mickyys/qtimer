@@ -1,5 +1,5 @@
 import { Calendar, MapPin, Clock, Users, ChevronDown, ChevronUp } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 interface EventCardProps {
   title: string;
@@ -25,6 +25,23 @@ export function EventCard({
   onViewResults
 }: EventCardProps) {
   const [expandedDistances, setExpandedDistances] = useState(false);
+  const [hasOverflow, setHasOverflow] = useState(false);
+  const distancesContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = distancesContainerRef.current;
+    if (!container) return;
+
+    const checkOverflow = () => {
+      setHasOverflow(container.scrollWidth > container.clientWidth);
+    };
+
+    checkOverflow();
+    const resizeObserver = new ResizeObserver(checkOverflow);
+    resizeObserver.observe(container);
+
+    return () => resizeObserver.disconnect();
+  }, [distances]);
   return (
     <div className="bg-white rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 max-w-sm">
       {/* Image Section */}
@@ -61,14 +78,17 @@ export function EventCard({
         
         {/* Distances */}
         <div className="mb-4">
-          <div className="flex flex-wrap gap-2 mb-2">
+          <div 
+            ref={distancesContainerRef}
+            className={`flex flex-wrap gap-2 mb-2 ${expandedDistances ? '' : 'overflow-hidden whitespace-nowrap'}`}
+          >
             {(expandedDistances ? distances : distances.slice(0, 1)).map((distance, index) => (
-              <span key={index} className="bg-red-100 text-red-700 px-2 py-1 rounded text-sm">
+              <span key={index} className="bg-red-100 text-red-700 px-2 py-1 rounded text-sm flex-shrink-0">
                 {distance}
               </span>
             ))}
           </div>
-          {distances.length > 1 && (
+          {hasOverflow && (
             <button
               onClick={() => setExpandedDistances(!expandedDistances)}
               className="text-red-600 hover:text-red-700 text-sm font-medium flex items-center gap-1"
@@ -79,7 +99,7 @@ export function EventCard({
                 </>
               ) : (
                 <>
-                  Ver más ({distances.length - 1}) <ChevronDown className="w-4 h-4" />
+                  Ver más <ChevronDown className="w-4 h-4" />
                 </>
               )}
             </button>
