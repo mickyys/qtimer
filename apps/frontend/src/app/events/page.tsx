@@ -23,13 +23,29 @@ interface FrontendEvent {
 
 // Función para mapear eventos del backend al formato del frontend
 const mapBackendEventToFrontend = (backendEvent: any): FrontendEvent => {
-  // Formatear la fecha
-  const eventDate = new Date(backendEvent.date);
+  // Parsear la fecha correctamente (asumiendo que viene en formato YYYY-MM-DD ISO o similar)
+  const eventDateString = backendEvent.date;
+  // Crear la fecha sin aplicar timezone (considera que es hora local)
+  const [year, month, day] = eventDateString.split('T')[0].split('-');
+  const eventDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  
   const formattedDate = eventDate.toLocaleDateString('es-ES', {
     day: 'numeric',
     month: 'long',
     year: 'numeric'
   });
+  
+  // Determinar el estado del evento basándose en la fecha actual
+  const now = new Date();
+  // Ajustar 'ahora' para comparar solo la fecha (sin hora)
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  
+  let status = 'Próximamente';
+  if (eventDate < todayStart) {
+    status = 'Finalizado';
+  } else if (eventDate.getTime() === todayStart.getTime()) {
+    status = 'En curso';
+  }
   
   return {
     title: backendEvent.name || 'Evento sin nombre',
@@ -37,9 +53,7 @@ const mapBackendEventToFrontend = (backendEvent: any): FrontendEvent => {
     time: backendEvent.time || '09:00 hrs',
     location: backendEvent.address || 'Ubicación por determinar',
     imageUrl: backendEvent.imageUrl || '',
-    status: backendEvent.status === 'active' ? 'Próximamente' : 
-            backendEvent.status === 'finished' ? 'Finalizado' : 
-            backendEvent.status === 'in_progress' ? 'En curso' : 'Próximamente',
+    status: status,
     distances: ['5K', '10K', '21K'], // Valores por defecto, se podrían obtener del backend en el futuro
     participants: backendEvent.recordsCount || 0,
     modalities: backendEvent.uniqueModalities || [],

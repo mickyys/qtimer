@@ -109,9 +109,9 @@ export default function EditEventPage() {
       const event = await getEvent(eventId);
       setOriginalEvent(event);
       
-      // Convert date from ISO to YYYY-MM-DD format
-      const date = new Date(event.date);
-      const formattedDate = date.toISOString().split('T')[0];
+      // Convert date from ISO to YYYY-MM-DD format without timezone issues
+      const [year, month, day] = event.date.split('T')[0].split('-');
+      const formattedDate = `${year}-${month}-${day}`;
       
       setFormData({
         name: event.name || "",
@@ -175,7 +175,10 @@ export default function EditEventPage() {
 
   const formatDateForDisplay = (dateString: string) => {
     try {
-      return new Date(dateString).toLocaleDateString("es-ES", {
+      // Parsear la fecha correctamente
+      const [year, month, day] = dateString.split('T')[0].split('-');
+      const eventDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      return eventDate.toLocaleDateString("es-ES", {
         year: "numeric",
         month: "long",
         day: "numeric",
