@@ -207,12 +207,18 @@ export default function UploadModal({ isOpen, onClose, onSuccess, preSelectedEve
                   disabled={isLoading}
                 >
                   <option value="">Selecciona un evento...</option>
-                  {events.map((event) => (
-                    <option key={event.id} value={event.id}>
-                      {event.name} - {new Date(event.date).toLocaleDateString("es-ES")}
-                      {event.fileHash ? " (Con datos)" : " (Sin datos)"}
-                    </option>
-                  ))}
+                  {events.map((event) => {
+                    // Parsear la fecha correctamente
+                    const [year, month, day] = event.date.split('T')[0].split('-');
+                    const eventDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                    const formattedDate = eventDate.toLocaleDateString("es-ES");
+                    return (
+                      <option key={event.id} value={event.id}>
+                        {event.name} - {formattedDate}
+                        {event.fileHash ? " (Con datos)" : " (Sin datos)"}
+                      </option>
+                    );
+                  })}
                 </select>
               )}
             </div>

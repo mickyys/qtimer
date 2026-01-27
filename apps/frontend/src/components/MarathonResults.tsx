@@ -615,14 +615,14 @@ export function MarathonResults({ eventSlug, event }: MarathonResultsProps) {
                       onClick={() => handleSelectParticipant(participant)}
                       className="hover:bg-gray-50 transition-colors cursor-pointer"
                     >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          {getMedalIcon(participant.position)}
-                          <span className="text-gray-900">{participant.position}</span>
-                        </div>
+                      <td className="px-6 py-4">                        
+                          <span className="text-gray-900">{participant.position}</span>                        
                       </td>
                       <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">                         
+                         {getMedalIcon(participant.categoryPosition)}
                         <span className="text-gray-700">{participant.categoryPosition}</span>
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm">

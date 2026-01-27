@@ -357,7 +357,10 @@ export default function AdminDashboard() {
 
   const formatDate = (dateString: string) => {
     try {
-      return new Date(dateString).toLocaleDateString("es-ES", {
+      // Parsear la fecha correctamente
+      const [year, month, day] = dateString.split('T')[0].split('-');
+      const eventDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      return eventDate.toLocaleDateString("es-ES", {
         year: "numeric",
         month: "long",
         day: "numeric",

@@ -45,8 +45,10 @@ const getSexIcon = (sex: string): string => {
   return sex?.toLowerCase() === 'f' ? '👩' : '👨';
 };
 
-const getPositionBadgeVariant = (position: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
-  const posNum = parseInt(position);
+const getPositionBadgeVariant = (position: string, categoryPosition?: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
+  // Usar categoryPosition si está disponible, sino usar position general
+  const posToUse = categoryPosition || position;
+  const posNum = parseInt(posToUse);
   if (posNum === 1) return 'default';
   if (posNum <= 3) return 'secondary';
   return 'outline';
@@ -88,7 +90,7 @@ export const ParticipantsTable: FC<ParticipantsTableProps> = ({
     );
   }
 
-  const getDisplayValue = (value: string, key: string): ReactNode => {
+  const getDisplayValue = (value: string, key: string, participantData?: any): ReactNode => {
     if (key === 'category') {
       return (
         <Badge className={getCategoryColor(value)}>
@@ -116,7 +118,7 @@ export const ParticipantsTable: FC<ParticipantsTableProps> = ({
         );
       }
       return (
-        <Badge variant={getPositionBadgeVariant(value)} className="font-bold">
+        <Badge variant={getPositionBadgeVariant(value, participantData?.['categoryPosition'])} className="font-bold">
           #{value}
         </Badge>
       );
@@ -188,7 +190,7 @@ export const ParticipantsTable: FC<ParticipantsTableProps> = ({
                       key={`${participant.id}-${column}`}
                       className="px-4 py-3 text-sm text-slate-700"
                     >
-                      {getDisplayValue(participant.data[column] || '', column)}
+                      {getDisplayValue(participant.data[column] || '', column, participant.data)}
                     </TableCell>
                   ))}
 
@@ -229,7 +231,7 @@ export const ParticipantsTable: FC<ParticipantsTableProps> = ({
                                 {key}
                               </p>
                               <p className="text-sm font-medium text-slate-900 mt-1">
-                                {getDisplayValue(value, key)}
+                                {getDisplayValue(value, key, participant.data)}
                               </p>
                             </div>
                           ))}
