@@ -139,6 +139,13 @@ export default function CreateEventPage() {
     }
   };
 
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setPassword("");
+    // Clear the auth cookie
+    document.cookie = "auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center px-4">
@@ -191,12 +198,20 @@ export default function CreateEventPage() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Logo />
-            <button 
-              onClick={() => router.push("/admin/dashboard")}
-              className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
-            >
-              ← Dashboard
-            </button>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => router.push("/admin/dashboard")}
+                className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                ← Dashboard
+              </button>
+              <button 
+                onClick={handleLogout}
+                className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Salir
+              </button>
+            </div>
           </div>
         </div>
       </div>
