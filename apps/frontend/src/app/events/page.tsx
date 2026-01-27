@@ -49,7 +49,7 @@ const mapBackendEventToFrontend = (backendEvent: any): FrontendEvent => {
     title: backendEvent.name || 'Evento sin nombre',
     date: formattedDate,
     time: backendEvent.time || '09:00 hrs',
-    location: backendEvent.address || 'Ubicación por determinar',
+    location: backendEvent.address,
     imageUrl: backendEvent.imageUrl || '',
     status: status,
     distances: ['5K', '10K', '21K'], // Valores por defecto, se podrían obtener del backend en el futuro
