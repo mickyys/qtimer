@@ -214,25 +214,26 @@ export default function AdminDashboard() {
     setAuthError("");
 
     try {
-      const response = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
-      });
-
-      if (response.ok) {
+      // Validate against ADMIN_PASSWORD from environment
+      if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
         setIsAuthenticated(true);
         setPassword("");
         loadEvents();
       } else {
-        const data = await response.json();
-        setAuthError(data.message || "Contraseña incorrecta");
+        setAuthError("Contraseña incorrecta");
       }
     } catch (error) {
-      setAuthError("Error de conexión al intentar autenticar");
+      setAuthError("Error al validar contraseña");
     } finally {
       setIsAuthLoading(false);
     }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setPassword("");
+    // Clear the auth cookie
+    document.cookie = "auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
   };
 
   const loadEvents = async () => {
@@ -423,12 +424,20 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Logo />
-            <button 
-              onClick={() => router.push("/events")}
-              className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
-            >
-              ← Volver a eventos
-            </button>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => router.push("/events")}
+                className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                ← Volver a eventos
+              </button>
+              <button 
+                onClick={handleLogout}
+                className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Salir
+              </button>
+            </div>
           </div>
         </div>
       </div>

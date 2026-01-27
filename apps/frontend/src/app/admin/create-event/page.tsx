@@ -119,21 +119,15 @@ export default function CreateEventPage() {
     setAuthError("");
 
     try {
-      const response = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
-      });
-
-      if (response.ok) {
+      // Validate against ADMIN_PASSWORD from environment
+      if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
         setIsAuthenticated(true);
         setPassword("");
       } else {
-        const data = await response.json();
-        setAuthError(data.message || "Contraseña incorrecta");
+        setAuthError("Contraseña incorrecta");
       }
     } catch (error) {
-      setAuthError("Error de conexión al intentar autenticar");
+      setAuthError("Error al validar contraseña");
     } finally {
       setIsAuthLoading(false);
     }
