@@ -14,15 +14,15 @@ export async function POST(req: Request) {
   const { password } = await req.json();
 
   if (password === ADMIN_PASSWORD) {
-    // Create a JWT token
-    const token = sign({ user: "admin" }, SECRET_KEY, { expiresIn: "1h" });
+    // Create a JWT token with 24 hours expiration
+    const token = sign({ user: "admin" }, SECRET_KEY, { expiresIn: "24h" });
 
     // Serialize the cookie
     const serializedCookie = serialize("auth-token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV !== "development",
       sameSite: "strict",
-      maxAge: 60 * 60, // 1 hour
+      maxAge: 24 * 60 * 60, // 24 hours
       path: "/",
     });
 
@@ -33,6 +33,6 @@ export async function POST(req: Request) {
       },
     });
   } else {
-    return NextResponse.json({ message: "Invalid password" }, { status: 401 });
+    return NextResponse.json({ message: "Contraseña incorrecta" }, { status: 401 });
   }
 }
