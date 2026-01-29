@@ -94,24 +94,33 @@ export default function CreateEventPage() {
   };
 
   useEffect(() => {
-    // Check if user is already authenticated by verifying the auth cookie
-    const checkAuth = async () => {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/events`, {
-          method: "GET",
-          credentials: "include",
-        });
-        
-        if (response.ok) {
-          setIsAuthenticated(true);
+    // Check if user is already authenticated via localStorage
+    const checkAuth = () => {
+      const savedAuth = localStorage.getItem("adminAuth");
+      if (savedAuth) {
+        try {
+          const authData = JSON.parse(savedAuth);
+          const now = Date.now();
+          // Check if token is still valid (24 hours = 86400000 ms)
+          if (authData.timestamp && (now - authData.timestamp) < 86400000) {
+            setIsAuthenticated(true);
+          } else {
+            // Token expired, remove it and redirect
+            localStorage.removeItem("adminAuth");
+            router.push("/admin/dashboard");
+          }
+        } catch (error) {
+          localStorage.removeItem("adminAuth");
+          router.push("/admin/dashboard");
         }
-      } catch (error) {
-        // Silently fail - require login
+      } else {
+        // Not authenticated, redirect to dashboard
+        router.push("/admin/dashboard");
       }
     };
 
     checkAuth();
-  }, []);
+  }, [router]);
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,6 +130,12 @@ export default function CreateEventPage() {
     try {
       // Validate against ADMIN_PASSWORD from environment
       if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
+        // Save authentication to localStorage with timestamp (24 hours)
+        const authData = {
+          authenticated: true,
+          timestamp: Date.now()
+        };
+        localStorage.setItem("adminAuth", JSON.stringify(authData));
         setIsAuthenticated(true);
         setPassword("");
       } else {
@@ -136,8 +151,10 @@ export default function CreateEventPage() {
   const handleLogout = () => {
     setIsAuthenticated(false);
     setPassword("");
-    // Clear the auth cookie
-    document.cookie = "auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    // Clear localStorage
+    localStorage.removeItem("adminAuth");
+    // Redirect to home
+    router.push("/");
   };
 
   if (!isAuthenticated) {
