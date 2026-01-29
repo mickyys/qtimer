@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import ImageUpload from "@/components/ImageUpload";
 import Logo from "@/components/Logo";
@@ -12,6 +13,7 @@ export default function CreateEventPage() {
   const [password, setPassword] = useState("");
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -172,16 +174,30 @@ export default function CreateEventPage() {
                 <label htmlFor="password" className="block text-sm font-medium text-gray-900 mb-2">
                   Contraseña
                 </label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-2 rounded-lg bg-gray-50 text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
-                  placeholder="Ingresa tu contraseña"
-                  disabled={isAuthLoading}
-                  autoFocus
-                />
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full px-4 py-2 pr-10 rounded-lg bg-gray-50 text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+                    placeholder="Ingresa tu contraseña"
+                    disabled={isAuthLoading}
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    disabled={isAuthLoading}
+                    className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  >
+                    {showPassword ? (
+                      <EyeOff size={20} />
+                    ) : (
+                      <Eye size={20} />
+                    )}
+                  </button>
+                </div>
               </div>
 
               {authError && (
