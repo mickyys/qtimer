@@ -187,26 +187,31 @@ export default function AdminDashboard() {
     preSelectedEventId: undefined,
   });
 
-  // Authentication check
+  // Check authentication on mount
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/events`, {
-          method: "GET",
-          credentials: "include",
-        });
-        
-        if (response.ok) {
-          setIsAuthenticated(true);
-          loadEvents();
+    const checkAuth = () => {
+      const savedAuth = localStorage.getItem("adminAuth");
+      if (savedAuth) {
+        try {
+          const authData = JSON.parse(savedAuth);
+          const now = Date.now();
+          // Check if token is still valid (24 hours = 86400000 ms)
+          if (authData.timestamp && (now - authData.timestamp) < 86400000) {
+            setIsAuthenticated(true);
+            loadEvents();
+          } else {
+            // Token expired, remove it
+            localStorage.removeItem("adminAuth");
+          }
+        } catch (error) {
+          localStorage.removeItem("adminAuth");
         }
-      } catch (error) {
-        // Silently fail - require login
       }
     };
 
     checkAuth();
   }, []);
+
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -216,6 +221,12 @@ export default function AdminDashboard() {
     try {
       // Validate against ADMIN_PASSWORD from environment
       if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
+        // Save authentication to localStorage with timestamp (24 hours)
+        const authData = {
+          authenticated: true,
+          timestamp: Date.now()
+        };
+        localStorage.setItem("adminAuth", JSON.stringify(authData));
         setIsAuthenticated(true);
         setPassword("");
         loadEvents();
@@ -232,8 +243,12 @@ export default function AdminDashboard() {
   const handleLogout = () => {
     setIsAuthenticated(false);
     setPassword("");
+    // Clear localStorage
+    localStorage.removeItem("adminAuth");
     // Clear the auth cookie
     document.cookie = "auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    // Redirect to home
+    router.push("/");
   };
 
   const loadEvents = async () => {

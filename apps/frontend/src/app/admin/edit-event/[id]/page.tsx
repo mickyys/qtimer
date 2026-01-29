@@ -50,28 +50,33 @@ export default function EditEventPage() {
 
   // Authentication check
   useEffect(() => {
-    console.log("Checking authentication...", eventId);
-    console.log("Event ID:", eventId);
-    console.log("API URL:", `${process.env.NEXT_PUBLIC_API_URL}/events`);
-    const checkAuth = async () => {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/events`, {
-          method: "GET",
-          credentials: "include",
-        });
-        
-        console.log("Auth check response:", response);
-        if (response.ok) {
-          setIsAuthenticated(true);
-          loadEvent();
+    const checkAuth = () => {
+      const savedAuth = localStorage.getItem("adminAuth");
+      if (savedAuth) {
+        try {
+          const authData = JSON.parse(savedAuth);
+          const now = Date.now();
+          // Check if token is still valid (24 hours = 86400000 ms)
+          if (authData.timestamp && (now - authData.timestamp) < 86400000) {
+            setIsAuthenticated(true);
+            loadEvent();
+          } else {
+            // Token expired, remove it and redirect
+            localStorage.removeItem("adminAuth");
+            router.push("/admin/dashboard");
+          }
+        } catch (error) {
+          localStorage.removeItem("adminAuth");
+          router.push("/admin/dashboard");
         }
-      } catch (error) {
-        // Silently fail - require login
+      } else {
+        // Not authenticated, redirect to dashboard
+        router.push("/admin/dashboard");
       }
     };
 
     checkAuth();
-  }, [eventId]);
+  }, [eventId, router]);
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,25 +84,34 @@ export default function EditEventPage() {
     setAuthError("");
 
     try {
-      const response = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
-      });
-
-      if (response.ok) {
+      // Validate against ADMIN_PASSWORD from environment
+      if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
+        // Save authentication to localStorage with timestamp (24 hours)
+        const authData = {
+          authenticated: true,
+          timestamp: Date.now()
+        };
+        localStorage.setItem("adminAuth", JSON.stringify(authData));
         setIsAuthenticated(true);
         setPassword("");
         loadEvent();
       } else {
-        const data = await response.json();
-        setAuthError(data.message || "Contraseña incorrecta");
+        setAuthError("Contraseña incorrecta");
       }
     } catch (error) {
-      setAuthError("Error de conexión al intentar autenticar");
+      setAuthError("Error al validar contraseña");
     } finally {
       setIsAuthLoading(false);
     }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setPassword("");
+    // Clear localStorage
+    localStorage.removeItem("adminAuth");
+    // Redirect to home
+    router.push("/");
   };
 
   const loadEvent = async () => {
@@ -250,12 +264,20 @@ export default function EditEventPage() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Logo />
-            <button 
-              onClick={() => router.back()}
-              className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
-            >
-              ← Volver
-            </button>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => router.back()}
+                className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                ← Volver
+              </button>
+              <button 
+                onClick={handleLogout}
+                className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Salir
+              </button>
+            </div>
           </div>
         </div>
       </div>
