@@ -3,11 +3,12 @@ import { sign } from "jsonwebtoken";
 import { serialize } from "cookie";
 
 const SECRET_KEY = process.env.JWT_SECRET;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+// Soporta tanto ADMIN_PASSWORD como NEXT_PUBLIC_ADMIN_PASSWORD
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
 
 export async function POST(req: Request) {
   if (!SECRET_KEY || !ADMIN_PASSWORD) {
-    console.error("Missing JWT_SECRET or ADMIN_PASSWORD environment variables");
+    console.error("Missing JWT_SECRET or ADMIN_PASSWORD/NEXT_PUBLIC_ADMIN_PASSWORD environment variables");
     return new Response(JSON.stringify({ message: "Server configuration error" }), { status: 500 });
   }
 
