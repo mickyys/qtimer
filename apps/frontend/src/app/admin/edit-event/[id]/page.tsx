@@ -11,6 +11,7 @@ import Logo from "@/components/Logo";
 interface Event {
   id: string;
   name: string;
+  slug: string;
   date: string;
   time: string;
   address: string;
