@@ -2,15 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Edit, Trash2, FileUp, QrCode, Settings2, Calendar, MapPin, Clock } from "lucide-react";
 import { getEvents, deleteEvent, updateEventStatus } from "@/services/api";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import UploadModal from "@/components/UploadModal";
 import Logo from "@/components/Logo";
+import QRModal from "./QRModal";
 
 interface Event {
   id: string;
   name: string;
+  slug: string;
   date: string;
   time: string;
   address: string;
@@ -52,7 +54,7 @@ const DeleteModal = ({ isOpen, onClose, onConfirm, eventName, isDeleting }: Dele
           <button
             onClick={onConfirm}
             disabled={isDeleting}
-            className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-50"
+            className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-50 flex items-center gap-2"
           >
             {isDeleting ? "Eliminando..." : "Eliminar"}
           </button>
@@ -76,49 +78,43 @@ const StatusModal = ({ isOpen, onClose, onConfirm, eventName, currentStatus, isU
 
   useEffect(() => {
     setSelectedStatus(currentStatus);
-  }, [currentStatus]);
+  }, [currentStatus, isOpen]);
 
   if (!isOpen) return null;
 
   const statuses = [
-    { value: "PUBLISHED", label: "Publicado", color: "text-green-600" },
-    { value: "HIDDEN", label: "Oculto", color: "text-yellow-600" },
-    { value: "DRAFT", label: "Borrador", color: "text-gray-600" }
+    { id: 'active', label: 'Activo', color: 'bg-green-100 text-green-800' },
+    { id: 'draft', label: 'Borrador', color: 'bg-gray-100 text-gray-800' },
+    { id: 'finished', label: 'Finalizado', color: 'bg-blue-100 text-blue-800' },
+    { id: 'cancelled', label: 'Cancelado', color: 'bg-red-100 text-red-800' },
   ];
-
-  const handleConfirm = () => {
-    if (selectedStatus !== currentStatus) {
-      onConfirm(selectedStatus);
-    } else {
-      onClose();
-    }
-  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md border border-gray-200">
-        <h3 className="text-xl font-bold text-gray-900 mb-4">Cambiar Estado del Evento</h3>
-        <p className="text-gray-700 mb-4">
-          Evento: <strong>&quot;{eventName}&quot;</strong>
+        <h3 className="text-xl font-bold text-gray-900 mb-4">Cambiar Estado</h3>
+        <p className="text-gray-700 mb-6">
+          Actualiza el estado para <strong>&quot;{eventName}&quot;</strong>:
         </p>
         
-        <div className="space-y-3 mb-6">
+        <div className="grid grid-cols-2 gap-3 mb-8">
           {statuses.map((status) => (
-            <label key={status.value} className="flex items-center cursor-pointer">
-              <input
-                type="radio"
-                name="status"
-                value={status.value}
-                checked={selectedStatus === status.value}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="mr-3 text-red-600"
-                disabled={isUpdating}
-              />
-              <span className={`font-medium ${status.color}`}>{status.label}</span>
-            </label>
+            <button
+              key={status.id}
+              onClick={() => setSelectedStatus(status.id)}
+              className={`p-3 rounded-lg border-2 transition text-left ${
+                selectedStatus === status.id
+                  ? 'border-red-600 bg-red-50'
+                  : 'border-gray-100 hover:border-gray-200'
+              }`}
+            >
+              <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium mb-1 ${status.color}`}>
+                {status.label}
+              </span>
+            </button>
           ))}
         </div>
-        
+
         <div className="flex gap-3 justify-end">
           <button
             onClick={onClose}
@@ -128,11 +124,11 @@ const StatusModal = ({ isOpen, onClose, onConfirm, eventName, currentStatus, isU
             Cancelar
           </button>
           <button
-            onClick={handleConfirm}
+            onClick={() => onConfirm(selectedStatus)}
             disabled={isUpdating || selectedStatus === currentStatus}
             className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-50"
           >
-            {isUpdating ? "Actualizando..." : "Actualizar"}
+            {isUpdating ? "Actualizando..." : "Guardar Cambios"}
           </button>
         </div>
       </div>
@@ -180,40 +176,32 @@ export default function AdminDashboard() {
     isUpdating: false,
   });
 
-  // Upload modal state
   const [uploadModal, setUploadModal] = useState<{
     isOpen: boolean;
-    preSelectedEventId?: string;
+    preSelectedEventId: string;
   }>({
     isOpen: false,
-    preSelectedEventId: undefined,
+    preSelectedEventId: "",
   });
 
-  // Check authentication on mount
+  const [qrModal, setQrModal] = useState<{
+    isOpen: boolean;
+    eventName: string;
+    eventSlug: string;
+  }>({
+    isOpen: false,
+    eventName: "",
+    eventSlug: "",
+  });
+
   useEffect(() => {
-    const checkAuth = () => {
-      const savedAuth = localStorage.getItem("adminAuth");
-      if (savedAuth) {
-        try {
-          const authData = JSON.parse(savedAuth);
-          const now = Date.now();
-          // Check if token is still valid (24 hours = 86400000 ms)
-          if (authData.timestamp && (now - authData.timestamp) < 86400000) {
-            setIsAuthenticated(true);
-            loadEvents();
-          } else {
-            // Token expired, remove it
-            localStorage.removeItem("adminAuth");
-          }
-        } catch (error) {
-          localStorage.removeItem("adminAuth");
-        }
-      }
-    };
-
-    checkAuth();
+    // Check if user was already authenticated in this session
+    const authStatus = sessionStorage.getItem("admin_authenticated");
+    if (authStatus === "true") {
+      setIsAuthenticated(true);
+      loadEvents();
+    }
   }, []);
-
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -221,45 +209,32 @@ export default function AdminDashboard() {
     setAuthError("");
 
     try {
-      // Validate against ADMIN_PASSWORD from environment
-      if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
-        // Save authentication to localStorage with timestamp (24 hours)
-        const authData = {
-          authenticated: true,
-          timestamp: Date.now()
-        };
-        localStorage.setItem("adminAuth", JSON.stringify(authData));
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+
+      if (response.ok) {
+        sessionStorage.setItem("admin_authenticated", "true");
         setIsAuthenticated(true);
-        setPassword("");
         loadEvents();
       } else {
         setAuthError("Contraseña incorrecta");
       }
-    } catch (error) {
-      setAuthError("Error al validar contraseña");
+    } catch (err) {
+      setAuthError("Error de conexión");
     } finally {
       setIsAuthLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setPassword("");
-    // Clear localStorage
-    localStorage.removeItem("adminAuth");
-    // Clear the auth cookie
-    document.cookie = "auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    // Redirect to home
-    router.push("/");
-  };
-
   const loadEvents = async () => {
-    setIsLoading(true);
-    setError("");
     try {
-      const response = await getEvents("", "", 1, 100, true); // Get first 100 events including HIDDEN
-      console.log("Loaded events:", response.events);
-      setEvents(response.events);
+      setIsLoading(true);
+      const data = await getEvents("", "", 1, 100, true);
+      setEvents(data.events);
+      setError("");
     } catch (err) {
       setError("Error al cargar los eventos");
       console.error(err);
@@ -268,9 +243,14 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleEdit = (eventId: string) => {
-    console.log("Edit button clicked, eventId:", eventId);
-    router.push(`/admin/edit-event/${eventId}`);
+  const handleLogout = () => {
+    sessionStorage.removeItem("admin_authenticated");
+    setIsAuthenticated(false);
+    setPassword("");
+  };
+
+  const handleEdit = (id: string) => {
+    router.push(`/admin/edit-event/${id}`);
   };
 
   const openDeleteModal = (eventId: string, eventName: string) => {
@@ -295,11 +275,10 @@ export default function AdminDashboard() {
     setDeleteModal(prev => ({ ...prev, isDeleting: true }));
     try {
       await deleteEvent(deleteModal.eventId);
-      await loadEvents(); // Reload events after deletion
+      setEvents(events.filter(e => e.id !== deleteModal.eventId));
       closeDeleteModal();
     } catch (err) {
-      setError("Error al eliminar el evento");
-      console.error(err);
+      alert("Error al eliminar el evento");
       setDeleteModal(prev => ({ ...prev, isDeleting: false }));
     }
   };
@@ -328,16 +307,15 @@ export default function AdminDashboard() {
     setStatusModal(prev => ({ ...prev, isUpdating: true }));
     try {
       await updateEventStatus(statusModal.eventId, newStatus);
-      await loadEvents(); // Reload events after status update
+      setEvents(events.map(e => e.id === statusModal.eventId ? { ...e, status: newStatus } : e));
       closeStatusModal();
     } catch (err) {
-      setError("Error al actualizar el estado del evento");
-      console.error(err);
+      alert("Error al actualizar el estado");
       setStatusModal(prev => ({ ...prev, isUpdating: false }));
     }
   };
 
-  const openUploadModal = (eventId?: string) => {
+  const openUploadModal = (eventId: string = "") => {
     setUploadModal({
       isOpen: true,
       preSelectedEventId: eventId,
@@ -347,56 +325,72 @@ export default function AdminDashboard() {
   const closeUploadModal = () => {
     setUploadModal({
       isOpen: false,
-      preSelectedEventId: undefined,
+      preSelectedEventId: "",
     });
   };
 
   const handleUploadSuccess = () => {
-    loadEvents(); // Reload events after successful upload
+    closeUploadModal();
+    loadEvents();
+  };
+
+  const openQrModal = (eventName: string, eventSlug: string) => {
+    setQrModal({
+      isOpen: true,
+      eventName,
+      eventSlug,
+    });
+  };
+
+  const closeQrModal = () => {
+    setQrModal({
+      ...qrModal,
+      isOpen: false,
+    });
+  };
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return "-";
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("es-ES", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "PUBLISHED": return "text-green-700 bg-green-100";
-      case "HIDDEN": return "text-yellow-700 bg-yellow-100";
-      case "DRAFT": return "text-gray-700 bg-gray-100";
-      default: return "text-gray-700 bg-gray-100";
+      case 'active': return 'bg-green-100 text-green-800 border-green-200';
+      case 'draft': return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'finished': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case "PUBLISHED": return "Publicado";
-      case "HIDDEN": return "Oculto";
-      case "DRAFT": return "Borrador";
+      case 'active': return 'Activo';
+      case 'draft': return 'Borrador';
+      case 'finished': return 'Finalizado';
+      case 'cancelled': return 'Cancelado';
       default: return status;
     }
   };
 
-  const formatDate = (dateString: string) => {
-    try {
-      // Parsear la fecha correctamente
-      const [year, month, day] = dateString.split('T')[0].split('-');
-      const eventDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-      return eventDate.toLocaleDateString("es-ES", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-    } catch {
-      return dateString;
-    }
-  };
-
-  // Authentication UI
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center px-4">
-        <div className="w-full max-w-md">
-          <div className="bg-white rounded-lg shadow-xl p-8 border border-gray-200">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Panel de Administración</h1>
-            <p className="text-gray-600 mb-8">
-              Ingresa tu contraseña de administrador para continuar
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+        <div className="mb-8">
+          <Logo />
+        </div>
+
+        <div className="w-full max-w-md bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+          <div className="p-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Acceso Administrador</h2>
+            <p className="text-gray-600 mb-8 text-center">
+            Ingresa tu contraseña de administrador para continuar
             </p>
 
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
@@ -450,21 +444,21 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Top Header with Logo and Navigation */}
-      <div className="bg-white border-b border-gray-200">
+      {/* Top Header */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Logo />
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <button 
                 onClick={() => router.push("/events")}
-                className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+                className="hidden sm:flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
               >
                 ← Volver a eventos
               </button>
               <button 
                 onClick={handleLogout}
-                className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
               >
                 Salir
               </button>
@@ -473,126 +467,137 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
+        {/* Header Section */}
+        <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Gestión de Eventos</h2>
-            <p className="text-gray-600">
-              Administra todos los eventos del sistema
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Gestión de Eventos</h2>
+            <p className="text-gray-600 text-sm sm:text-base">
+              Administra todos los eventos y resultados del sistema
             </p>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={() => router.push("/admin/create-event")}
-              className="px-6 py-2.5 rounded-lg bg-red-600 text-white font-bold hover:bg-red-700 transition whitespace-nowrap"
-            >
-              + Crear Evento
-            </button>           
-          </div>
+          <button
+            onClick={() => router.push("/admin/create-event")}
+            className="w-full md:w-auto px-6 py-3 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-all shadow-md hover:shadow-lg active:scale-95 flex items-center justify-center gap-2"
+          >
+            <span className="text-xl">+</span> Crear Nuevo Evento
+          </button>
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-600">{error}</p>
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+            <div className="p-1.5 bg-red-100 rounded-full text-red-600">!</div>
+            <p className="text-red-600 font-medium">{error}</p>
           </div>
         )}
 
         {/* Loading State */}
         {isLoading && (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl shadow-sm border border-gray-100">
             <LoadingOverlay />
+            <p className="mt-4 text-gray-500 font-medium animate-pulse">Cargando eventos...</p>
           </div>
         )}
 
-        {/* Events Table */}
+        {/* Content Section: Table for Desktop, Cards for Mobile */}
         {!isLoading && (
-          <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
+          <div className="space-y-4">
+            {/* Desktop Table View */}
+            <div className="hidden lg:block bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Evento
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Fecha
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Estado
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Archivo
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Acciones
-                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Evento</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Fecha / Hora</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Datos</th>
+                    <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-100">
                   {events.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                        No se encontraron eventos
+                      <td colSpan={5} className="px-6 py-20 text-center text-gray-400">
+                        No se encontraron eventos registrados
                       </td>
                     </tr>
                   ) : (
                     events.map((event) => (
-                      <tr key={event.id} className="hover:bg-gray-50 transition">
-                        <td className="px-6 py-4">
-                          <div>
-                            <div className="text-gray-900 font-medium">{event.name}</div>
-                            {event.address && (
-                              <div className="text-gray-500 text-sm">{event.address}</div>
-                            )}
+                      <tr key={event.id} className="hover:bg-gray-50/50 transition-colors group">
+                        <td className="px-6 py-5">
+                          <div className="flex flex-col">
+                            <span className="text-gray-900 font-semibold group-hover:text-red-600 transition-colors">{event.name}</span>
+                            <span className="text-gray-500 text-xs flex items-center gap-1 mt-1">
+                              <MapPin size={12} /> {event.address || "Sin dirección"}
+                            </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-gray-700">
-                          <div>{formatDate(event.date)}</div>
-                          {event.time && (
-                            <div className="text-gray-500 text-sm">{event.time}</div>
-                          )}
+                        <td className="px-6 py-5">
+                          <div className="flex flex-col text-sm">
+                            <span className="text-gray-700 font-medium flex items-center gap-1.5">
+                              <Calendar size={14} className="text-gray-400" /> {formatDate(event.date)}
+                            </span>
+                            <span className="text-gray-500 text-xs flex items-center gap-1.5 mt-1">
+                              <Clock size={14} className="text-gray-400" /> {event.time || "--:--"}
+                            </span>
+                          </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex px-2 py-1 text-xs rounded-full ${getStatusColor(event.status)}`}>
+                        <td className="px-6 py-5">
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${getStatusColor(event.status)}`}>
                             {getStatusLabel(event.status)}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-5">
                           {event.fileHash ? (
-                            <span className="text-green-600 text-sm">✓ Con datos</span>
+                            <span className="inline-flex items-center gap-1.5 text-green-600 text-xs font-bold bg-green-50 px-2 py-1 rounded-md border border-green-100">
+                              <span className="w-1.5 h-1.5 rounded-full bg-green-600 animate-pulse"></span>
+                              Con datos
+                            </span>
                           ) : (
-                            <span className="text-yellow-600 text-sm">⚠ Sin datos</span>
+                            <span className="inline-flex items-center gap-1.5 text-amber-600 text-xs font-bold bg-amber-50 px-2 py-1 rounded-md border border-amber-100">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                              Sin datos
+                            </span>
                           )}
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex justify-center gap-2 flex-wrap">
+                        <td className="px-6 py-5">
+                          <div className="flex justify-center items-center gap-1">
                             <button
                               onClick={() => handleEdit(event.id)}
-                              className="px-3 py-1 rounded-md bg-blue-600 text-white text-xs hover:bg-blue-700 transition"
+                              className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
+                              title="Editar evento"
                             >
-                              Editar
+                              <Edit size={18} />
                             </button>
                             <button
                               onClick={() => openUploadModal(event.id)}
-                              className="px-3 py-1 rounded-md bg-purple-600 text-white text-xs hover:bg-purple-700 transition"
-                              title="Cargar archivo .racecheck a este evento"
+                              className="p-2 rounded-lg text-purple-600 hover:bg-purple-50 transition-colors"
+                              title="Cargar resultados (.racecheck)"
                             >
-                              📁 Archivo
+                              <FileUp size={18} />
+                            </button>
+                            <button
+                              onClick={() => openQrModal(event.name, event.slug)}
+                              className="p-2 rounded-lg text-green-600 hover:bg-green-50 transition-colors"
+                              title="Código QR"
+                            >
+                              <QrCode size={18} />
                             </button>
                             <button
                               onClick={() => openStatusModal(event.id, event.name, event.status)}
-                              className="px-3 py-1 rounded-md bg-amber-600 text-white text-xs hover:bg-amber-700 transition"
+                              className="p-2 rounded-lg text-amber-600 hover:bg-amber-50 transition-colors"
+                              title="Cambiar estado"
                             >
-                              Estado
+                              <Settings2 size={18} />
                             </button>
                             <button
                               onClick={() => openDeleteModal(event.id, event.name)}
-                              className="px-3 py-1 rounded-md bg-red-600 text-white text-xs hover:bg-red-700 transition"
+                              className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                              title="Eliminar evento"
                             >
-                              Eliminar
+                              <Trash2 size={18} />
                             </button>
                           </div>
                         </td>
@@ -601,6 +606,88 @@ export default function AdminDashboard() {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="lg:hidden space-y-4">
+              {events.length === 0 ? (
+                <div className="bg-white rounded-2xl p-10 text-center border border-dashed border-gray-300">
+                  <p className="text-gray-400">No hay eventos registrados</p>
+                </div>
+              ) : (
+                events.map((event) => (
+                  <div key={event.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 min-w-0 pr-2">
+                        <h3 className="text-lg font-bold text-gray-900 truncate">{event.name}</h3>
+                        <p className="text-gray-500 text-sm flex items-center gap-1 mt-1 truncate">
+                          <MapPin size={14} /> {event.address || "Sin dirección"}
+                        </p>
+                      </div>
+                      <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold border whitespace-nowrap ${getStatusColor(event.status)}`}>
+                        {getStatusLabel(event.status)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-4 py-2 border-y border-gray-50">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Fecha</span>
+                        <span className="text-sm font-semibold text-gray-700">{formatDate(event.date)}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Hora</span>
+                        <span className="text-sm font-semibold text-gray-700">{event.time || "--:--"}</span>
+                      </div>
+                      <div className="flex flex-col ml-auto items-end">
+                        <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Resultados</span>
+                        {event.fileHash ? (
+                          <span className="text-xs font-bold text-green-600">✓ Cargados</span>
+                        ) : (
+                          <span className="text-xs font-bold text-amber-500">⚠ Pendiente</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-5 gap-2 pt-1">
+                      <button
+                        onClick={() => handleEdit(event.id)}
+                        className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl bg-blue-50 text-blue-700 active:scale-90 transition-transform"
+                      >
+                        <Edit size={20} />
+                        <span className="text-[10px] font-bold">Editar</span>
+                      </button>
+                      <button
+                        onClick={() => openUploadModal(event.id)}
+                        className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl bg-purple-50 text-purple-700 active:scale-90 transition-transform"
+                      >
+                        <FileUp size={20} />
+                        <span className="text-[10px] font-bold">Archivo</span>
+                      </button>
+                      <button
+                        onClick={() => openQrModal(event.name, event.slug)}
+                        className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl bg-green-50 text-green-700 active:scale-90 transition-transform"
+                      >
+                        <QrCode size={20} />
+                        <span className="text-[10px] font-bold">QR</span>
+                      </button>
+                      <button
+                        onClick={() => openStatusModal(event.id, event.name, event.status)}
+                        className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl bg-amber-50 text-amber-700 active:scale-90 transition-transform"
+                      >
+                        <Settings2 size={20} />
+                        <span className="text-[10px] font-bold">Estado</span>
+                      </button>
+                      <button
+                        onClick={() => openDeleteModal(event.id, event.name)}
+                        className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl bg-red-50 text-red-700 active:scale-90 transition-transform"
+                      >
+                        <Trash2 size={20} />
+                        <span className="text-[10px] font-bold">Borrar</span>
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
@@ -629,6 +716,13 @@ export default function AdminDashboard() {
         onClose={closeUploadModal}
         onSuccess={handleUploadSuccess}
         preSelectedEventId={uploadModal.preSelectedEventId}
+      />
+
+      <QRModal
+        isOpen={qrModal.isOpen}
+        onClose={closeQrModal}
+        eventName={qrModal.eventName}
+        eventSlug={qrModal.eventSlug}
       />
     </div>
   );

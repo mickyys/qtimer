@@ -3,6 +3,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 interface Event {
   id: string;
   name: string;
+  slug: string;
   date: string;
   time: string;
   address: string;
@@ -167,6 +168,7 @@ export const uploadFileToEvent = async (file: File, eventId: string): Promise<Up
 
 interface CreateEventRequest {
   name: string;
+  slug: string;
   date: string;
   time: string;
   address: string;
@@ -176,6 +178,7 @@ interface CreateEventRequest {
 interface CreateEventResponse {
   id: string;
   name: string;
+  slug: string;
   date: string;
   time: string;
   address: string;
