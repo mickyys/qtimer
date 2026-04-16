@@ -2,14 +2,15 @@ import { NextResponse } from "next/server";
 import { sign } from "jsonwebtoken";
 import { serialize } from "cookie";
 
-const SECRET_KEY = process.env.JWT_SECRET;
+// Usa un secreto por defecto si no existe la variable de entorno para evitar bloqueos
+const SECRET_KEY = process.env.JWT_SECRET || "quintatimer-secret-key-default-123";
 // Soporta tanto ADMIN_PASSWORD como NEXT_PUBLIC_ADMIN_PASSWORD
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
 
 export async function POST(req: Request) {
-  if (!SECRET_KEY || !ADMIN_PASSWORD) {
-    console.error("Missing JWT_SECRET or ADMIN_PASSWORD/NEXT_PUBLIC_ADMIN_PASSWORD environment variables");
-    return new Response(JSON.stringify({ message: "Server configuration error" }), { status: 500 });
+  if (!ADMIN_PASSWORD) {
+    console.error("Missing ADMIN_PASSWORD/NEXT_PUBLIC_ADMIN_PASSWORD environment variables");
+    return new Response(JSON.stringify({ message: "Server configuration error: No admin password configured" }), { status: 500 });
   }
 
   const { password } = await req.json();
