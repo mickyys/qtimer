@@ -3,26 +3,27 @@ import { sign } from "jsonwebtoken";
 import { serialize } from "cookie";
 
 const SECRET_KEY = process.env.JWT_SECRET;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+// Soporta tanto ADMIN_PASSWORD como NEXT_PUBLIC_ADMIN_PASSWORD
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
 
 export async function POST(req: Request) {
   if (!SECRET_KEY || !ADMIN_PASSWORD) {
-    console.error("Missing JWT_SECRET or ADMIN_PASSWORD environment variables");
+    console.error("Missing JWT_SECRET or ADMIN_PASSWORD/NEXT_PUBLIC_ADMIN_PASSWORD environment variables");
     return new Response(JSON.stringify({ message: "Server configuration error" }), { status: 500 });
   }
 
   const { password } = await req.json();
 
   if (password === ADMIN_PASSWORD) {
-    // Create a JWT token
-    const token = sign({ user: "admin" }, SECRET_KEY, { expiresIn: "1h" });
+    // Create a JWT token with 24 hours expiration
+    const token = sign({ user: "admin" }, SECRET_KEY, { expiresIn: "24h" });
 
     // Serialize the cookie
     const serializedCookie = serialize("auth-token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV !== "development",
       sameSite: "strict",
-      maxAge: 60 * 60, // 1 hour
+      maxAge: 24 * 60 * 60, // 24 hours
       path: "/",
     });
 
@@ -33,6 +34,6 @@ export async function POST(req: Request) {
       },
     });
   } else {
-    return NextResponse.json({ message: "Invalid password" }, { status: 401 });
+    return NextResponse.json({ message: "Contraseña incorrecta" }, { status: 401 });
   }
 }

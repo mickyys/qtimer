@@ -25,3 +25,8 @@ pnpm-debug.log*
 .env
 main
 /apps/backend/.env
+air.log
+
+# agent binaries
+/apps/agent/agent
+/apps/agent/agent.exe

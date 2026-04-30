@@ -1,6 +1,10 @@
 {
-  "directory_to_watch": "/path/to/your/directory",
-  "endpoint": "http://localhost:8080/upload",
+  "directory_to_watch": "/path/to/watch",
+  "completed_directory": "/path/to/completed",
+  "error_directory": "/path/to/error",
+  "upload_endpoint": "http://localhost:8080/events/upload",
   "check_interval_seconds": 60,
-  "http_timeout_seconds": 10
+  "http_timeout_seconds": 15,
+  "max_retries": 5,
+  "retry_delay_seconds": 30
 }

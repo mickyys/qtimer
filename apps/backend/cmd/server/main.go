@@ -29,7 +29,12 @@ func main() {
 
 	eventService := services.NewEventService(eventRepository)
 
-	eventHandler := handlers.NewEventHandler(eventService)
+	cloudinaryService, err := services.NewCloudinaryService()
+	if err != nil {
+		log.Println("Warning: Cloudinary not configured. Image uploads will be disabled.")
+	}
+
+	eventHandler := handlers.NewEventHandler(eventService, cloudinaryService)
 
 	r := gin.Default()
 
@@ -46,7 +51,7 @@ func main() {
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     origins,
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
 		AllowHeaders:     []string{"Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
@@ -56,9 +61,19 @@ func main() {
 	{
 		events := api.Group("/events")
 		{
+			events.POST("/create", eventHandler.CreateEvent)
 			events.POST("/upload", eventHandler.Upload)
+			events.POST("/:id/upload", eventHandler.UploadToEvent)
+			events.POST("/upload-image", eventHandler.UploadImageToCloudinary)
 			events.GET("", eventHandler.GetEvents)
+			events.GET("/slug/:slug", eventHandler.GetEventBySlug)
+			events.GET("/:id", eventHandler.GetEvent)
+			events.PUT("/:id", eventHandler.UpdateEvent)
+			events.PATCH("/:id/image", eventHandler.UpdateEventImage)
+			events.DELETE("/:id", eventHandler.DeleteEvent)
+			events.PATCH("/:id/status", eventHandler.UpdateEventStatus)
 			events.GET("/:id/participants", eventHandler.GetParticipants)
+			events.GET("/:id/participants/comparison", eventHandler.GetParticipantComparison)
 		}
 	}
 
