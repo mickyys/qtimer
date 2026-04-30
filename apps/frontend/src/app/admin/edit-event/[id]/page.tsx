@@ -51,6 +51,36 @@ export default function EditEventPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const loadEvent = async () => {
+    if (!eventId) return;
+    
+    setIsLoading(true);
+    setError("");
+    try {
+      const event = await getEvent(eventId);
+      setOriginalEvent(event);
+      
+      // Convert date from ISO to YYYY-MM-DD format without timezone issues
+      const [year, month, day] = event.date.split('T')[0].split('-');
+      const formattedDate = `${year}-${month}-${day}`;
+      
+      setFormData({
+        name: event.name || "",
+        date: formattedDate || "",
+        time: event.time || "",
+        address: event.address || "",
+        imageUrl: event.imageUrl || "",
+        fileName: (event as any).fileName || "",
+        fileExtension: (event as any).fileExtension || "",
+      });
+    } catch (err) {
+      setError("Error al cargar el evento");
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Authentication check
   useEffect(() => {
     const checkAuth = () => {
@@ -64,17 +94,12 @@ export default function EditEventPage() {
             setIsAuthenticated(true);
             loadEvent();
           } else {
-            // Token expired, remove it and redirect
+            // Token expired, remove it
             localStorage.removeItem("adminAuth");
-            router.push("/admin/dashboard");
           }
         } catch (error) {
           localStorage.removeItem("adminAuth");
-          router.push("/admin/dashboard");
         }
-      } else {
-        // Not authenticated, redirect to dashboard
-        router.push("/admin/dashboard");
       }
     };
 
@@ -115,36 +140,6 @@ export default function EditEventPage() {
     localStorage.removeItem("adminAuth");
     // Redirect to home
     router.push("/");
-  };
-
-  const loadEvent = async () => {
-    if (!eventId) return;
-    
-    setIsLoading(true);
-    setError("");
-    try {
-      const event = await getEvent(eventId);
-      setOriginalEvent(event);
-      
-      // Convert date from ISO to YYYY-MM-DD format without timezone issues
-      const [year, month, day] = event.date.split('T')[0].split('-');
-      const formattedDate = `${year}-${month}-${day}`;
-      
-      setFormData({
-        name: event.name || "",
-        date: formattedDate || "",
-        time: event.time || "",
-        address: event.address || "",
-        imageUrl: event.imageUrl || "",
-        fileName: (event as any).fileName || "",
-        fileExtension: (event as any).fileExtension || "",
-      });
-    } catch (err) {
-      setError("Error al cargar el evento");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
