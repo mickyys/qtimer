@@ -117,7 +117,6 @@ export const EventCard: React.FC<EventCardProps> = ({
           {(rankingName || rankingUrl) && (
             <div className="flex items-center text-gray-600">
               <FileText className="w-4 h-4 mr-2 text-red-600" />
-              <span className="text-sm mr-2">Ranking:</span>
               {rankingUrl ? (
                 <a
                   href={getRankingPreviewUrl(rankingUrl)}
