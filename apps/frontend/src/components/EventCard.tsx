@@ -115,26 +115,34 @@ export const EventCard: React.FC<EventCardProps> = ({
             <span className="font-medium">{time}</span>
           </div>
           {(rankingName || rankingUrl) && (
-            <div>
-              {rankingUrl ? (
-                <a
-                  href={getRankingPreviewUrl(rankingUrl)}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-red-50 transition-colors"
-                  title="Abrir ranking"
-                >
+            <div className="rounded-xl border border-red-100 bg-gradient-to-r from-red-50 to-white px-3 py-2 shadow-sm">
+              <div className="flex items-start gap-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-700">
                   <FileText size={14} />
-                  <span className="truncate max-w-[190px]">{rankingName || 'Ranking oficial'}</span>
-                  <ExternalLink size={14} />
-                </a>
-              ) : (
-                <div className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600">
-                  <FileText size={14} />
-                  <span className="truncate max-w-[190px]">{rankingName}</span>
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-400">
+                    Ranking
+                  </p>
+                  {rankingUrl ? (
+                    <a
+                      href={getRankingPreviewUrl(rankingUrl)}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 text-sm font-medium text-gray-700 hover:text-red-700 transition-colors"
+                      title="Abrir ranking"
+                    >
+                      <span className="truncate">{rankingName || 'Ver ranking'}</span>
+                      <ExternalLink size={14} className="shrink-0" />
+                    </a>
+                  ) : (
+                    <p className="text-sm font-medium text-gray-700 truncate">
+                      {rankingName}
+                    </p>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           )}
         </div>
