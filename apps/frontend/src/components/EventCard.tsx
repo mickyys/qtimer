@@ -4,8 +4,9 @@ import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Heart } from 'lucide-react';
+import { Heart, FileText, ExternalLink } from 'lucide-react';
 import { cn } from '@/components/ui/utils';
+import { getRankingPreviewUrl } from '@/utils/rankingLink';
 
 interface EventCardProps {
   id?: string;
@@ -15,6 +16,8 @@ interface EventCardProps {
   time: string;
   location?: string;
   image?: string;
+  rankingName?: string;
+  rankingUrl?: string;
   sport?: string;
   participants?: number;
   modalities?: string[];
@@ -32,6 +35,8 @@ export const EventCard: React.FC<EventCardProps> = ({
   time,
   location,
   image,
+  rankingName,
+  rankingUrl,
   sport,
   participants,
   modalities,
@@ -95,6 +100,29 @@ export const EventCard: React.FC<EventCardProps> = ({
           <CardDescription className="flex items-center gap-1 mt-1">
             📍 {location}
           </CardDescription>
+        )}
+        {(rankingName || rankingUrl) && (
+          <div className="mt-3">
+            {rankingUrl ? (
+              <a
+                href={getRankingPreviewUrl(rankingUrl)}
+                target="_blank"
+                rel="noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 transition-colors"
+                title="Abrir ranking"
+              >
+                <FileText size={14} />
+                <span className="truncate max-w-[190px]">{rankingName || 'Ranking oficial'}</span>
+                <ExternalLink size={14} />
+              </a>
+            ) : (
+              <div className="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700">
+                <FileText size={14} />
+                <span className="truncate max-w-[190px]">{rankingName}</span>
+              </div>
+            )}
+          </div>
         )}
       </CardHeader>
 

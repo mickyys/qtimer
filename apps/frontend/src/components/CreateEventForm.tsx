@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import ImageUpload from "@/components/ImageUpload";
 import { toast } from "sonner";
 import { validateSlugInput } from "@/utils/slugValidation";
+import { getRankingPreviewExample } from "@/utils/rankingLink";
 
 interface CreateEventFormProps {
   onSuccess?: () => void;
@@ -228,6 +229,12 @@ export default function CreateEventForm({ onSuccess }: CreateEventFormProps) {
             className="w-full bg-slate-700 text-white border-slate-600 placeholder:text-slate-400 px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500"
             disabled={isLoading}
           />
+          <p className="mt-1 text-xs text-slate-400">
+            Si es Google Drive o Google Docs, termina el enlace en <code>/preview</code>.
+          </p>
+          <p className="mt-1 text-xs text-slate-400 break-all">
+            Ejemplo: {getRankingPreviewExample(formData.rankingUrl)}
+          </p>
         </div>
       </div>
 

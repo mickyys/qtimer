@@ -1,5 +1,6 @@
 import { Calendar, MapPin, Clock, Users, ChevronDown, ChevronUp, FileText, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
+import { getRankingPreviewUrl } from '@/utils/rankingLink';
 
 interface EventCardProps {
   title: string;
@@ -69,7 +70,7 @@ export function EventCard({
           <div className="mb-4">
             {rankingUrl ? (
               <a
-                href={rankingUrl}
+                href={getRankingPreviewUrl(rankingUrl)}
                 target="_blank"
                 rel="noreferrer"
                 onClick={(e) => e.stopPropagation()}

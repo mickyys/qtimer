@@ -6,6 +6,7 @@ import { Eye, EyeOff } from "lucide-react";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import ImageUpload from "@/components/ImageUpload";
 import Logo from "@/components/Logo";
+import { getRankingPreviewExample } from "@/utils/rankingLink";
 
 export default function CreateEventPage() {
   const router = useRouter();
@@ -371,6 +372,12 @@ export default function CreateEventPage() {
                   placeholder="https://..."
                   disabled={isSubmitting}
                 />
+                <p className="mt-1 text-xs text-gray-500">
+                  Si es Google Drive o Google Docs, termina el enlace en <code>/preview</code>.
+                </p>
+                <p className="mt-1 text-xs text-gray-500 break-all">
+                  Ejemplo: {getRankingPreviewExample(formData.rankingUrl)}
+                </p>
               </div>
             </div>
 
