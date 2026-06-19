@@ -66,29 +66,6 @@ export function EventCard({
       <div className="p-6 flex flex-col flex-1">
         <h3 className="text-gray-900 mb-2">{title}</h3>
 
-        {(rankingName || rankingUrl) && (
-          <div className="mb-4">
-            {rankingUrl ? (
-              <a
-                href={getRankingPreviewUrl(rankingUrl)}
-                target="_blank"
-                rel="noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100 transition-colors"
-              >
-                <FileText className="w-4 h-4" />
-                <span className="truncate max-w-[180px]">{rankingName || 'Ranking oficial'}</span>
-                <ExternalLink className="w-4 h-4" />
-              </a>
-            ) : (
-              <div className="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700">
-                <FileText className="w-4 h-4" />
-                <span className="truncate max-w-[180px]">{rankingName}</span>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Distances */}
         <div className="mb-4">
           <div className="flex flex-wrap gap-2 mb-2">
@@ -126,6 +103,29 @@ export function EventCard({
             <Clock className="w-4 h-4 mr-2 text-red-600" />
             <span className="text-sm">{time}</span>
           </div>
+          {(rankingName || rankingUrl) && (
+            <div>
+              {rankingUrl ? (
+                <a
+                  href={getRankingPreviewUrl(rankingUrl)}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800 ring-1 ring-amber-200 hover:bg-amber-100 transition-colors"
+                  title="Abrir ranking"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span className="truncate max-w-[190px]">{rankingName || 'Ranking oficial'}</span>
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              ) : (
+                <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800 ring-1 ring-amber-200">
+                  <FileText className="w-4 h-4" />
+                  <span className="truncate max-w-[190px]">{rankingName}</span>
+                </div>
+              )}
+            </div>
+          )}
 
           { location && (
             <div className="flex items-center text-gray-600">

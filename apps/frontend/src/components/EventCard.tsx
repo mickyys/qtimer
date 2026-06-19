@@ -101,34 +101,11 @@ export const EventCard: React.FC<EventCardProps> = ({
             📍 {location}
           </CardDescription>
         )}
-        {(rankingName || rankingUrl) && (
-          <div className="mt-3">
-            {rankingUrl ? (
-              <a
-                href={getRankingPreviewUrl(rankingUrl)}
-                target="_blank"
-                rel="noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 transition-colors"
-                title="Abrir ranking"
-              >
-                <FileText size={14} />
-                <span className="truncate max-w-[190px]">{rankingName || 'Ranking oficial'}</span>
-                <ExternalLink size={14} />
-              </a>
-            ) : (
-              <div className="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700">
-                <FileText size={14} />
-                <span className="truncate max-w-[190px]">{rankingName}</span>
-              </div>
-            )}
-          </div>
-        )}
       </CardHeader>
 
       <CardContent className="space-y-3">
         {/* Fecha y hora */}
-        <div className="flex items-center gap-4 text-sm text-slate-600">
+        <div className="space-y-2 text-sm text-slate-600">
           <div className="flex items-center gap-2">
             <span>📅</span>
             <span className="font-medium">{date}</span>
@@ -137,6 +114,29 @@ export const EventCard: React.FC<EventCardProps> = ({
             <span>🕐</span>
             <span className="font-medium">{time}</span>
           </div>
+          {(rankingName || rankingUrl) && (
+            <div>
+              {rankingUrl ? (
+                <a
+                  href={getRankingPreviewUrl(rankingUrl)}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800 ring-1 ring-amber-200 hover:bg-amber-100 transition-colors"
+                  title="Abrir ranking"
+                >
+                  <FileText size={14} />
+                  <span className="truncate max-w-[190px]">{rankingName || 'Ranking oficial'}</span>
+                  <ExternalLink size={14} />
+                </a>
+              ) : (
+                <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800 ring-1 ring-amber-200">
+                  <FileText size={14} />
+                  <span className="truncate max-w-[190px]">{rankingName}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Descripción */}
