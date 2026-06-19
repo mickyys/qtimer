@@ -122,7 +122,7 @@ export const EventCard: React.FC<EventCardProps> = ({
                   target="_blank"
                   rel="noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800 ring-1 ring-amber-200 hover:bg-amber-100 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-red-50 transition-colors"
                   title="Abrir ranking"
                 >
                   <FileText size={14} />
@@ -130,7 +130,7 @@ export const EventCard: React.FC<EventCardProps> = ({
                   <ExternalLink size={14} />
                 </a>
               ) : (
-                <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800 ring-1 ring-amber-200">
+                <div className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600">
                   <FileText size={14} />
                   <span className="truncate max-w-[190px]">{rankingName}</span>
                 </div>
