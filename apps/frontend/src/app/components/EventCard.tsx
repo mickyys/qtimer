@@ -104,25 +104,25 @@ export function EventCard({
             <span className="text-sm">{time}</span>
           </div>
           {(rankingName || rankingUrl) && (
-            <div>
+            <div className="flex items-center text-gray-600">
+              <FileText className="w-4 h-4 mr-2 text-red-600" />
+              <span className="text-sm mr-2">Ranking:</span>
               {rankingUrl ? (
                 <a
                   href={getRankingPreviewUrl(rankingUrl)}
                   target="_blank"
                   rel="noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-red-50 transition-colors"
+                  className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-red-700 transition-colors min-w-0"
                   title="Abrir ranking"
                 >
-                  <FileText className="w-4 h-4" />
-                  <span className="truncate max-w-[190px]">{rankingName || 'Ranking oficial'}</span>
-                  <ExternalLink className="w-4 h-4" />
+                  <span className="truncate">{rankingName || 'Ver ranking'}</span>
+                  <ExternalLink className="w-4 h-4 shrink-0" />
                 </a>
               ) : (
-                <div className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600">
-                  <FileText className="w-4 h-4" />
-                  <span className="truncate max-w-[190px]">{rankingName}</span>
-                </div>
+                <span className="text-sm font-medium text-gray-600 truncate">
+                  {rankingName}
+                </span>
               )}
             </div>
           )}
