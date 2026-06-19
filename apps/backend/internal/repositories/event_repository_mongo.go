@@ -356,6 +356,8 @@ func (r *mongoEventRepository) Update(id primitive.ObjectID, event *domain.Event
 			"time":             event.Time,
 			"address":          event.Address,
 			"imageUrl":         event.ImageURL,
+			"rankingName":      event.RankingName,
+			"rankingUrl":       event.RankingURL,
 			"fileName":         event.FileName,
 			"fileExtension":    event.FileExtension,
 			"status":           event.Status,

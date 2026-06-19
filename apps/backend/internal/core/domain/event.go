@@ -14,6 +14,8 @@ type Event struct {
 	Time             string             `bson:"time" json:"time"`
 	Address          string             `bson:"address" json:"address"`
 	ImageURL         string             `bson:"imageUrl" json:"imageUrl"`
+	RankingName      string             `bson:"rankingName" json:"rankingName"`
+	RankingURL       string             `bson:"rankingUrl" json:"rankingUrl"`
 	FileName         string             `bson:"fileName" json:"fileName"`
 	FileExtension    string             `bson:"fileExtension" json:"fileExtension"`
 	Status           string             `bson:"status" json:"status"`

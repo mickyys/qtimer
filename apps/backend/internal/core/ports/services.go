@@ -19,6 +19,8 @@ type CreateEventRequest struct {
 	Time          string `json:"time"` // Format: HH:MM
 	Address       string `json:"address"`
 	ImageURL      string `json:"imageUrl"`
+	RankingName   string `json:"rankingName"`
+	RankingURL    string `json:"rankingUrl"`
 	FileName      string `json:"fileName"`
 	FileExtension string `json:"fileExtension"`
 }
@@ -29,6 +31,8 @@ type UpdateEventRequest struct {
 	Time          string `json:"time"` // Format: HH:MM
 	Address       string `json:"address"`
 	ImageURL      string `json:"imageUrl"`
+	RankingName   string `json:"rankingName"`
+	RankingURL    string `json:"rankingUrl"`
 	FileName      string `json:"fileName"`
 	FileExtension string `json:"fileExtension"`
 }

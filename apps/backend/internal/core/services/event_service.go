@@ -170,6 +170,8 @@ func (s *eventService) CreateEvent(req *ports.CreateEventRequest) (*domain.Event
 		Time:          req.Time,
 		Address:       req.Address,
 		ImageURL:      req.ImageURL,
+		RankingName:   req.RankingName,
+		RankingURL:    req.RankingURL,
 		FileName:      req.FileName,
 		FileExtension: fileExtension,
 		Status:        "PUBLISHED",
@@ -370,6 +372,8 @@ func (s *eventService) UpdateEvent(id string, req *ports.UpdateEventRequest) (*d
 		Time:             req.Time,
 		Address:          req.Address,
 		ImageURL:         req.ImageURL,
+		RankingName:      req.RankingName,
+		RankingURL:       req.RankingURL,
 		FileName:         req.FileName,
 		FileExtension:    req.FileExtension,
 		Status:           existingEvent.Status, // Keep existing status
@@ -618,6 +622,8 @@ func (s *eventService) parseRaceCheckFile(file io.ReadSeeker, fileHash string, e
 		event.Time = existingEventByFileName.Time
 		event.Address = existingEventByFileName.Address
 		event.ImageURL = existingEventByFileName.ImageURL
+		event.RankingName = existingEventByFileName.RankingName
+		event.RankingURL = existingEventByFileName.RankingURL
 		event.Slug = existingEventByFileName.Slug
 
 		// Delete old data
@@ -646,6 +652,8 @@ func (s *eventService) parseRaceCheckFile(file io.ReadSeeker, fileHash string, e
 
 			reprocessed = true
 			event.ID = existingEvent.ID
+			event.RankingName = existingEvent.RankingName
+			event.RankingURL = existingEvent.RankingURL
 
 			// Delete old data
 			if err := s.eventRepository.DeleteEventData(existingEvent.ID); err != nil {

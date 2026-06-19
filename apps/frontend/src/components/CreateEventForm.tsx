@@ -20,6 +20,8 @@ export default function CreateEventForm({ onSuccess }: CreateEventFormProps) {
     date: "",
     time: "",
     address: "",
+    rankingName: "",
+    rankingUrl: "",
     imageUrl: "",
     fileName: "",
     fileExtension: ".racecheck",
@@ -78,6 +80,8 @@ export default function CreateEventForm({ onSuccess }: CreateEventFormProps) {
             date: formData.date || null,
             time: formData.time || null,
             address: formData.address || null,
+            rankingName: formData.rankingName || null,
+            rankingUrl: formData.rankingUrl || null,
             imageUrl: formData.imageUrl || null,
             fileName: formData.fileName || null,
             fileExtension: formData.fileExtension,
@@ -99,6 +103,8 @@ export default function CreateEventForm({ onSuccess }: CreateEventFormProps) {
         date: "",
         time: "",
         address: "",
+        rankingName: "",
+        rankingUrl: "",
         imageUrl: "",
         fileName: "",
         fileExtension: ".racecheck",
@@ -189,6 +195,40 @@ export default function CreateEventForm({ onSuccess }: CreateEventFormProps) {
           className="w-full bg-slate-700 text-white border-slate-600 placeholder:text-slate-400 px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500"
           disabled={isLoading}
         />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="rankingName" className="block text-sm font-medium text-white mb-2">
+            Nombre del Ranking
+          </label>
+          <input
+            id="rankingName"
+            name="rankingName"
+            type="text"
+            value={formData.rankingName}
+            onChange={handleChange}
+            placeholder="Ej: Ver ranking oficial"
+            className="w-full bg-slate-700 text-white border-slate-600 placeholder:text-slate-400 px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            disabled={isLoading}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="rankingUrl" className="block text-sm font-medium text-white mb-2">
+            Link del Ranking
+          </label>
+          <input
+            id="rankingUrl"
+            name="rankingUrl"
+            type="url"
+            value={formData.rankingUrl}
+            onChange={handleChange}
+            placeholder="https://..."
+            className="w-full bg-slate-700 text-white border-slate-600 placeholder:text-slate-400 px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            disabled={isLoading}
+          />
+        </div>
       </div>
 
       <div>

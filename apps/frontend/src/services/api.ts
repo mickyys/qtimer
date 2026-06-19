@@ -8,6 +8,8 @@ interface Event {
   time: string;
   address: string;
   imageUrl: string;
+  rankingName?: string;
+  rankingUrl?: string;
   fileName: string;
   fileExtension: string;
   status: string;
@@ -173,6 +175,8 @@ interface CreateEventRequest {
   time: string;
   address: string;
   imageUrl: string;
+  rankingName?: string;
+  rankingUrl?: string;
 }
 
 interface CreateEventResponse {
@@ -183,6 +187,8 @@ interface CreateEventResponse {
   time: string;
   address: string;
   imageUrl: string;
+  rankingName?: string;
+  rankingUrl?: string;
   status: string;
   createdAt: string;
 }
@@ -221,6 +227,8 @@ interface UpdateEventRequest {
   time: string;
   address: string;
   imageUrl: string;
+  rankingName?: string;
+  rankingUrl?: string;
   fileName?: string;
   fileExtension?: string;
 }
@@ -325,4 +333,3 @@ export const getEventBySlug = async (slug: string): Promise<Event> => {
 
   return response.json();
 };
-

@@ -16,6 +16,8 @@ interface Event {
   time: string;
   address: string;
   imageUrl: string;
+  rankingName?: string;
+  rankingUrl?: string;
   fileName?: string;
   fileExtension?: string;
   status: string;
@@ -40,6 +42,8 @@ export default function EditEventPage() {
     date: "",
     time: "",
     address: "",
+    rankingName: "",
+    rankingUrl: "",
     imageUrl: "",
     fileName: "",
     fileExtension: "",
@@ -69,6 +73,8 @@ export default function EditEventPage() {
         date: formattedDate || "",
         time: event.time || "",
         address: event.address || "",
+        rankingName: event.rankingName || "",
+        rankingUrl: event.rankingUrl || "",
         imageUrl: event.imageUrl || "",
         fileName: (event as any).fileName || "",
         fileExtension: (event as any).fileExtension || "",
@@ -390,6 +396,40 @@ export default function EditEventPage() {
                 placeholder="Ingrese la dirección del evento"
                 disabled={isSubmitting}
               />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="rankingName" className="block text-sm font-medium text-gray-900 mb-2">
+                  Nombre del Ranking
+                </label>
+                <input
+                  type="text"
+                  id="rankingName"
+                  name="rankingName"
+                  value={formData.rankingName}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 rounded-lg bg-gray-50 text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+                  placeholder="Ej: Ver ranking oficial"
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="rankingUrl" className="block text-sm font-medium text-gray-900 mb-2">
+                  Link del Ranking
+                </label>
+                <input
+                  type="url"
+                  id="rankingUrl"
+                  name="rankingUrl"
+                  value={formData.rankingUrl}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 rounded-lg bg-gray-50 text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+                  placeholder="https://..."
+                  disabled={isSubmitting}
+                />
+              </div>
             </div>
 
             {/* Image Upload */}

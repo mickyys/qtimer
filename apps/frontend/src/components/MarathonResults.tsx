@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Filter, Trophy, Medal, Award, ChevronDown, X, MapPin, Calendar, Timer, TrendingUp, User } from 'lucide-react';
+import { Filter, Trophy, Medal, Award, ChevronDown, X, MapPin, Calendar, Timer, TrendingUp, User, ExternalLink } from 'lucide-react';
 import { getParticipantsBySlug, getParticipantComparison } from '../services/api';
 import ParticipantDetailModal from './ParticipantDetailModal';
 import Logo from './Logo';
@@ -51,6 +51,8 @@ interface MarathonResultsProps {
     time: string;
     address: string;
     imageUrl: string;
+    rankingName?: string;
+    rankingUrl?: string;
     fileName: string;
     fileExtension: string;
     status: string;
@@ -402,6 +404,17 @@ export function MarathonResults({ eventSlug, event }: MarathonResultsProps) {
           </div>
           <h1 className="text-gray-900">Resultados de {event?.name || 'Maratón'}</h1>
           <p className="text-gray-600 mt-2">Consulta los resultados y posiciones de los participantes</p>
+          {event?.rankingName?.trim() && event?.rankingUrl?.trim() && (
+            <a
+              href={event.rankingUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-4 inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 transition-colors"
+            >
+              {event.rankingName}
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          )}
         </div>
       </div>
 

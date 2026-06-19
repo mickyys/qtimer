@@ -20,6 +20,8 @@ interface Event {
   time: string;
   address: string;
   imageUrl: string;
+  rankingName?: string;
+  rankingUrl?: string;
   fileName: string;
   fileExtension: string;
   status: string;
