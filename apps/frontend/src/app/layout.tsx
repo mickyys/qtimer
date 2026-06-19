@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Righteous, Orbitron } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./styles/globals.css";
 import NextAuthProvider from "./context/NextAuthProvider";
 import { ModalProvider } from "@/context/ModalContext";
@@ -28,6 +29,7 @@ export default function RootLayout({
             <main className="flex-grow">
               {children}
             </main>
+            <Analytics />
             <Footer />
             <WhatsAppButton />
           </ModalProvider>
