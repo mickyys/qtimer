@@ -1,4 +1,4 @@
-import { Calendar, MapPin, Clock, Users, ChevronDown, ChevronUp } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, ChevronDown, ChevronUp, FileText, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 
 interface EventCardProps {
@@ -7,6 +7,8 @@ interface EventCardProps {
   time: string;
   location: string;
   imageUrl: string;
+  rankingName?: string;
+  rankingUrl?: string;
   status: string;
   distances: string[];
   participants: number;
@@ -19,6 +21,8 @@ export function EventCard({
   time,
   location,
   imageUrl,
+  rankingName,
+  rankingUrl,
   status,
   distances = [],
   participants,
@@ -60,6 +64,29 @@ export function EventCard({
       {/* Content */}
       <div className="p-6 flex flex-col flex-1">
         <h3 className="text-gray-900 mb-2">{title}</h3>
+
+        {(rankingName || rankingUrl) && (
+          <div className="mb-4">
+            {rankingUrl ? (
+              <a
+                href={rankingUrl}
+                target="_blank"
+                rel="noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100 transition-colors"
+              >
+                <FileText className="w-4 h-4" />
+                <span className="truncate max-w-[180px]">{rankingName || 'Ranking oficial'}</span>
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            ) : (
+              <div className="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700">
+                <FileText className="w-4 h-4" />
+                <span className="truncate max-w-[180px]">{rankingName}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Distances */}
         <div className="mb-4">

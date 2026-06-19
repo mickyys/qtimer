@@ -14,6 +14,8 @@ interface FrontendEvent {
   time: string;
   location: string;
   imageUrl: string;
+  rankingName?: string;
+  rankingUrl?: string;
   status: string;
   distances: string[];
   participants: number;
@@ -51,6 +53,8 @@ const mapBackendEventToFrontend = (backendEvent: any): FrontendEvent => {
     time: backendEvent.time || '09:00 hrs',
     location: backendEvent.address,
     imageUrl: backendEvent.imageUrl || '',
+    rankingName: backendEvent.rankingName || '',
+    rankingUrl: backendEvent.rankingUrl || '',
     status: status,
     distances: ['5K', '10K', '21K'], // Valores por defecto, se podrían obtener del backend en el futuro
     participants: backendEvent.recordsCount || 0,
@@ -231,6 +235,8 @@ export default function App() {
                 time={event.time}
                 location={event.location}
                 imageUrl={event.imageUrl}
+                rankingName={event.rankingName}
+                rankingUrl={event.rankingUrl}
                 status={event.status || 'Próximo'}
                 participants={event.participants}
                 distances={event.modalities}
